@@ -1,0 +1,14 @@
+{
+    "name": "iainconnor/game-maker",
+    "description": "API documentation by Annotations.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Iain Connor",
+            "email": "iainconnor@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}
