@@ -70,8 +70,11 @@ class GameMaker {
 
 		foreach ($reflectedClass->getMethods() as $reflectionMethod) {
 			if ( static::$annotationReader->getMethodAnnotation($reflectionMethod, IgnoreHttpMethod::class) === null ) {
-				foreach (static::$annotationReader->getMethodAnnotations($reflectionMethod) as $methodAnnotation) {
-
+				$httpMethod = static::getFullHttpMethod($reflectionMethod, $apiAnnotation, $controllerAnnotation);
+				if ( $httpMethod !== null ) {
+					foreach (static::$annotationReader->getMethodAnnotations($reflectionMethod) as $methodAnnotation) {
+						var_dump ( $httpMethod );
+					}
 				}
 			}
 		}
@@ -79,6 +82,14 @@ class GameMaker {
 		return $endpoints;
 	}
 
+	/**
+	 * Retrieves the full HTTP method being described by the given method.
+	 *
+	 * @param \ReflectionMethod $reflectionMethod
+	 * @param API|null $apiAnnotation
+	 * @param Controller|null $controllerAnnotation
+	 * @return HttpMethod|null
+	 */
 	protected static function getFullHttpMethod(\ReflectionMethod $reflectionMethod, API $apiAnnotation = null, Controller $controllerAnnotation = null) {
 		/** @var HttpMethod|null $definedMethod */
 		$definedMethod = static::$annotationReader->getMethodAnnotation($reflectionMethod, HttpMethod::class);
@@ -97,7 +108,7 @@ class GameMaker {
 
 				$definedMethod->path = $controllerAnnotation->path . $definedMethod->path;
 
-				if ( $apiAnnotation->ignoreParent ) {
+				if ( $controllerAnnotation->ignoreParent ) {
 
 					return $definedMethod;
 				}
@@ -113,7 +124,7 @@ class GameMaker {
 	}
 
 	/**
-	 * If possible
+	 * If possible, makes an intelligent guess at the type of HTTP method being described.
 	 *
 	 * @param $methodName
 	 * @return HttpMethod|null

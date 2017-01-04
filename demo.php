@@ -9,7 +9,7 @@ const MY_FOO_CONTROLLER_PATH = "/foo";
 /**
  * Class Lorem
  *
- * @\IainConnor\GameMaker\Annotations\API(path="foo")
+ * @\IainConnor\GameMaker\Annotations\API(path=MY_API_PATH)
  * @\IainConnor\GameMaker\Annotations\Controller(path=MY_FOO_CONTROLLER_PATH)
  */
 class Lorem {
