@@ -80,8 +80,6 @@ class GameMaker {
 	}
 
 	protected static function getFullHttpMethod(\ReflectionMethod $reflectionMethod, API $apiAnnotation = null, Controller $controllerAnnotation = null) {
-		$path = null;
-
 		/** @var HttpMethod|null $definedMethod */
 		$definedMethod = static::$annotationReader->getMethodAnnotation($reflectionMethod, HttpMethod::class);
 
@@ -89,12 +87,37 @@ class GameMaker {
 			$definedMethod = static::guessHttpMethodFromMethodName($reflectionMethod->getShortName());
 		}
 
-		if ( $definedMethod->ignoreParent ) {
+		if ( $definedMethod !== null ) {
+			if ($definedMethod->ignoreParent) {
 
-			return $definedMethod;
+				return $definedMethod;
+			}
+
+			if ( $controllerAnnotation !== null ) {
+
+				$definedMethod->path = $controllerAnnotation->path . $definedMethod->path;
+
+				if ( $apiAnnotation->ignoreParent ) {
+
+					return $definedMethod;
+				}
+			}
+
+			if ( $apiAnnotation !== null ) {
+
+				$definedMethod->path = $apiAnnotation->path . $definedMethod->path;
+			}
 		}
+
+		return $definedMethod;
 	}
 
+	/**
+	 * If possible
+	 *
+	 * @param $methodName
+	 * @return HttpMethod|null
+	 */
 	protected static function guessHttpMethodFromMethodName($methodName) {
 		$guessMap = [
 			GET::class,
@@ -104,6 +127,19 @@ class GameMaker {
 			DELETE::class,
 			HEAD::class
 		];
+
+		foreach ( $guessMap as $guess ) {
+			if ( substr(strtolower($methodName), 0, strlen($guess)) == strtolower($guess) ) {
+
+				/** @var HttpMethod $httpMethod */
+				$httpMethod = new $guess();
+				$httpMethod->path = strtolower(preg_replace("/([A-Z_])/", "/$1", substr($methodName, strlen($guess))));
+
+				return $httpMethod;
+			}
+		}
+
+		return null;
 	}
 
 	/**
