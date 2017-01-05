@@ -11,6 +11,7 @@ use Doctrine\Common\Cache\ArrayCache;
 use IainConnor\GameMaker\Annotations\API;
 use IainConnor\GameMaker\Annotations\Controller;
 use IainConnor\GameMaker\Annotations\DELETE;
+use IainConnor\GameMaker\Annotations\GET;
 use IainConnor\GameMaker\Annotations\HEAD;
 use IainConnor\GameMaker\Annotations\HttpMethod;
 use IainConnor\GameMaker\Annotations\IgnoreHttpMethod;
@@ -140,12 +141,12 @@ class GameMaker {
 		];
 
 		foreach ( $guessMap as $guess ) {
-			if ( substr(strtolower($methodName), 0, strlen($guess)) == strtolower($guess) ) {
+			if ( substr(strtolower($methodName), 0, strlen(static::getAfterLastSlash($guess))) == strtolower(static::getAfterLastSlash($guess)) ) {
 
 				/** @var HttpMethod $httpMethod */
 				$httpMethod = new $guess();
-				$httpMethod->path = strtolower(preg_replace("/([A-Z_])/", "/$1", substr($methodName, strlen($guess))));
-
+				$httpMethod->path = strtolower(preg_replace("/([A-Z_])/", "/$1", substr($methodName, strlen(static::getAfterLastSlash($guess)))));
+				
 				return $httpMethod;
 			}
 		}
@@ -179,5 +180,10 @@ class GameMaker {
 	public static function getVendorRoot() {
 
 		return static::getProjectRoot() . "/vendor";
+	}
+
+	protected static function getAfterLastSlash($string) {
+
+		return substr($string, strrpos($string, '\\') + 1);
 	}
 }

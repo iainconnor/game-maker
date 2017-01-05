@@ -14,10 +14,7 @@ const MY_FOO_CONTROLLER_PATH = "/foo";
  */
 class Lorem {
 
-	/**
-	 * @\IainConnor\GameMaker\Annotations\GET(path="/ipsum")
-	 */
-	public function ipsum() {
+	public function getIpsum() {
 
 	}
 }
