@@ -6,6 +6,7 @@ namespace IainConnor\GameMaker;
 
 use IainConnor\Cornucopia\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
+use IainConnor\Cornucopia\Annotations\TypeHint;
 use IainConnor\Cornucopia\CachedReader;
 use Doctrine\Common\Cache\ArrayCache;
 use IainConnor\GameMaker\Annotations\API;
@@ -15,6 +16,7 @@ use IainConnor\GameMaker\Annotations\GET;
 use IainConnor\GameMaker\Annotations\HEAD;
 use IainConnor\GameMaker\Annotations\HttpMethod;
 use IainConnor\GameMaker\Annotations\IgnoreHttpMethod;
+use IainConnor\GameMaker\Annotations\Input;
 use IainConnor\GameMaker\Annotations\PATCH;
 use IainConnor\GameMaker\Annotations\POST;
 use IainConnor\GameMaker\Annotations\PUT;
@@ -169,10 +171,38 @@ class GameMaker {
 	}
 
 	protected static function getInputsForMethod(\ReflectionMethod $method) {
+		/** @var Input[] $inputs */
+		$inputs = [];
+
+		$methodAnnotations = static::$annotationReader->getMethodAnnotations($method);
+
+		foreach ($methodAnnotations as $key => $methodAnnotation) {
+			$input = null;
+
+			if ( $methodAnnotation instanceof Input ) {
+				$input = $methodAnnotation;
 
 
-		foreach (static::$annotationReader->getMethodAnnotations($method) as $methodAnnotation) {
-			var_dump ( $methodAnnotation );
+				if ( $methodAnnotations[$key + 1] instanceof  TypeHint ) {
+					// Check if the input annotation is followed by a type hint.
+					// If it is, merge them.
+
+					$input->typeHint = $methodAnnotations[$key + 1];
+					unset($methodAnnotations[$key + 1]);
+				} else if ( is_string($input->typeHint) ) {
+					// Check if type hint is a string. If it is, process it.
+
+					$input->typeHint = TypeHint::parse($input->typeHint, static::$annotationReader->getMethodImports($method));
+				}
+			} else if ( $methodAnnotation instanceof TypeHint ) {
+				$input = new Input();
+				$input->typeHint = $methodAnnotation;
+			}
+
+			// Fill in the blanks with rational defaults.
+			if ( $input->)
+
+			$inputs[] = $input;
 		}
 
 		echo "-----\n";

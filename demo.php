@@ -67,16 +67,16 @@ class Foo {
 	 * For example, GET's come from query parameters, POST's come from post body, etc.
 	 * This can be overridden.
 	 * @\IainConnor\GameMaker\Annotations\Input(in="HEADER")
-	 * @param $foo string A string.
+	 * @param string $foo A string.
 	 *
 	 * The names the input referred to as by the HTTP call can also be customized.
 	 * @\IainConnor\GameMaker\Annotations\Input(name="custom_name")
-	 * @param $bar string[] An array of strings.
+	 * @param string[] $bar An array of strings.
 	 *
 	 * Inputs can be type-hinted as one of a set of possible values.
 	 * Inputs are required unless defaulted or type-hinted as null.
 	 * @\IainConnor\GameMaker\Annotations\Input(enum={"yes", "no"})
-	 * @param $baz null An optional integer.
+	 * @param null|int $baz An optional integer.
 	 */
 	public function sit($foo, array $bar, $baz = null) {
 
@@ -86,7 +86,7 @@ class Foo {
 	 * Inputs can be part of the query path.
 	 *
 	 * @\IainConnor\GameMaker\Annotations\POST(path="/amit/{foo}")
-	 * @param $foo string A string.
+	 * @param string $foo A string.
 	 */
 	public function amit($foo) {
 
@@ -95,7 +95,7 @@ class Foo {
 	/**
 	 * This works for guessed methods as well.
 	 *
-	 * @param $foo string A string.
+	 * @param string $foo A string.
 	 */
 	public function getConsecteturFoo($foo) {
 
@@ -103,11 +103,11 @@ class Foo {
 
 	/**
 	 * If, for whatever reason, you don't want to have (some or any) inputs in your method signature,
-	 * you can still document them.
+	 * you can still document them, so long as you provide a type hint.
 	 *
 	 * @\IainConnor\GameMaker\Annotations\GET(path="/adipiscing")
 	 *
-	 * @\IainConnor\GameMaker\Annotations\Input() $foo string A string.
+	 * @\IainConnor\GameMaker\Annotations\Input(typeHint="string $foo A string.")
 	 */
 	public function adipiscing() {
 

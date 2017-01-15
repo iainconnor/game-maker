@@ -25,4 +25,6 @@ class Input {
 	public $in;
 
 	public $enum;
+
+	public $typeHint;
 }
