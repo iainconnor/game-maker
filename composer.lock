@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "dbb812b0b0a6d9bc24da7ac99b8b5719",
+    "content-hash": "10c962f19f73e0b377f90b39fbadc48a",
     "packages": [
         {
             "name": "doctrine/annotations",
@@ -12,12 +12,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/doctrine/annotations.git",
-                "reference": "b544ea1f2f2e1af294dbd516d4ddecd3db3d7e33"
+                "reference": "1fcf863da06d8f305fc031ee87360f087d854c8d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/doctrine/annotations/zipball/b544ea1f2f2e1af294dbd516d4ddecd3db3d7e33",
-                "reference": "b544ea1f2f2e1af294dbd516d4ddecd3db3d7e33",
+                "url": "https://api.github.com/repos/doctrine/annotations/zipball/1fcf863da06d8f305fc031ee87360f087d854c8d",
+                "reference": "1fcf863da06d8f305fc031ee87360f087d854c8d",
                 "shasum": ""
             },
             "require": {
@@ -72,7 +72,7 @@
                 "docblock",
                 "parser"
             ],
-            "time": "2017-01-02 20:02:20"
+            "time": "2017-01-09 00:44:36"
         },
         {
             "name": "doctrine/cache",
@@ -196,12 +196,51 @@
                 "parser"
             ],
             "time": "2014-09-09 13:34:57"
+        },
+        {
+            "name": "iainconnor/cornucopia",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/iainconnor/cornucopia.git",
+                "reference": "aae24d461b1426a8c45c0b3a832c8b87280bd486"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/iainconnor/cornucopia/zipball/aae24d461b1426a8c45c0b3a832c8b87280bd486",
+                "reference": "aae24d461b1426a8c45c0b3a832c8b87280bd486",
+                "shasum": ""
+            },
+            "require": {
+                "doctrine/annotations": "^1.3",
+                "doctrine/cache": "^1.6"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "IainConnor\\Cornucopia\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Iain Connor",
+                    "email": "iainconnor@gmail.com"
+                }
+            ],
+            "description": "Expanded Annotation processor.",
+            "time": "2017-01-11 05:56:35"
         }
     ],
     "packages-dev": [],
     "aliases": [],
     "minimum-stability": "dev",
-    "stability-flags": [],
+    "stability-flags": {
+        "iainconnor/cornucopia": 20
+    },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": [],

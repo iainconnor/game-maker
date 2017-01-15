@@ -4,19 +4,121 @@ include(dirname(__FILE__) . "/vendor/autoload.php");
 
 const MY_DOMAIN = "http://www.mydemo.com";
 const MY_API_PATH = MY_DOMAIN . "/rest_api";
-const MY_FOO_CONTROLLER_PATH = "/foo";
 
 /**
- * Class Lorem
+ * A demo class.
  *
+ * You can define a root path for your API.
  * @\IainConnor\GameMaker\Annotations\API(path=MY_API_PATH)
- * @\IainConnor\GameMaker\Annotations\Controller(path=MY_FOO_CONTROLLER_PATH)
+ *
+ * You can define a root path for a specific controller.
+ * You can optionally ignore merging this with the parent annotation above.
+ * @\IainConnor\GameMaker\Annotations\Controller(path="/foo", ignoreParent=false)
  */
-class Lorem {
+class Foo {
 
-	public function getIpsum() {
+	/**
+	 * You can define the endpoint for a method.
+	 *
+	 * @\IainConnor\GameMaker\Annotations\GET(path="/lorem")
+	 */
+	public function lorem() {
+
+	}
+
+	/**
+	 * You can optionally ignore merging this path with the parent.
+	 *
+	 * @\IainConnor\GameMaker\Annotations\POST(path="http://www.mydemo.com/rest_api_v2/ipsum", ignoreParent=true)
+	 */
+	public function ipsum() {
+
+	}
+
+	/**
+	 * You can skip the HTTP method annotation, so long as the method name follows a naming convention of `{http-method-name}ApiPathName`.
+	 */
+	public function deleteDolor() {
+
+	}
+
+	/**
+	 * Non-public functions are ignored by default.
+	 */
+	private function imPrivate() {
+
+	}
+
+	/**
+	 * But you can ignore public functions as well.
+	 *
+	 * @\IainConnor\GameMaker\Annotations\IgnoreHttpMethod()
+	 */
+	public function imPublic() {
+
+	}
+
+	/**
+	 * Methods can have inputs.
+	 *
+	 * @\IainConnor\GameMaker\Annotations\GET(path="/sit")
+	 *
+	 * By default, inputs are sourced from the most likely place given the HTTP method.
+	 * For example, GET's come from query parameters, POST's come from post body, etc.
+	 * This can be overridden.
+	 * @\IainConnor\GameMaker\Annotations\Input(in="HEADER")
+	 * @param $foo string A string.
+	 *
+	 * The names the input referred to as by the HTTP call can also be customized.
+	 * @\IainConnor\GameMaker\Annotations\Input(name="custom_name")
+	 * @param $bar string[] An array of strings.
+	 *
+	 * Inputs can be type-hinted as one of a set of possible values.
+	 * Inputs are required unless defaulted or type-hinted as null.
+	 * @\IainConnor\GameMaker\Annotations\Input(enum={"yes", "no"})
+	 * @param $baz null An optional integer.
+	 */
+	public function sit($foo, array $bar, $baz = null) {
+
+	}
+
+	/**
+	 * Inputs can be part of the query path.
+	 *
+	 * @\IainConnor\GameMaker\Annotations\POST(path="/amit/{foo}")
+	 * @param $foo string A string.
+	 */
+	public function amit($foo) {
+
+	}
+
+	/**
+	 * This works for guessed methods as well.
+	 *
+	 * @param $foo string A string.
+	 */
+	public function getConsecteturFoo($foo) {
+
+	}
+
+	/**
+	 * If, for whatever reason, you don't want to have (some or any) inputs in your method signature,
+	 * you can still document them.
+	 *
+	 * @\IainConnor\GameMaker\Annotations\GET(path="/adipiscing")
+	 *
+	 * @\IainConnor\GameMaker\Annotations\Input() $foo string A string.
+	 */
+	public function adipiscing() {
 
 	}
 }
 
-\IainConnor\GameMaker\GameMaker::getEndpointsForController(Lorem::class);
+class Bar {
+	public static function validateMe($input) {
+
+		return $input > 10;
+	}
+}
+
+\IainConnor\GameMaker\GameMaker::getEndpointsForController(Foo::class);

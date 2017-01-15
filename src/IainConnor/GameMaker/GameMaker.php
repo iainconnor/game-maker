@@ -4,9 +4,9 @@
 namespace IainConnor\GameMaker;
 
 
-use Doctrine\Common\Annotations\AnnotationReader;
+use IainConnor\Cornucopia\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
-use Doctrine\Common\Annotations\CachedReader;
+use IainConnor\Cornucopia\CachedReader;
 use Doctrine\Common\Cache\ArrayCache;
 use IainConnor\GameMaker\Annotations\API;
 use IainConnor\GameMaker\Annotations\Controller;
@@ -18,6 +18,8 @@ use IainConnor\GameMaker\Annotations\IgnoreHttpMethod;
 use IainConnor\GameMaker\Annotations\PATCH;
 use IainConnor\GameMaker\Annotations\POST;
 use IainConnor\GameMaker\Annotations\PUT;
+use IainConnor\GameMaker\NamingConventions\CamelToSnake;
+use IainConnor\GameMaker\NamingConventions\NamingConvention;
 
 class GameMaker {
 
@@ -35,9 +37,19 @@ class GameMaker {
 	protected static $annotationReader;
 
 	/**
+	 * Naming convention to use when guessing the path for a function name.
+	 * @var NamingConvention
+	 */
+	protected static $functionToPathNamingConvention;
+
+	/**
 	 * Boot and ensure requirements are filled.
 	 */
 	protected static function boot() {
+
+		if (static::$functionToPathNamingConvention == null) {
+			static::$functionToPathNamingConvention = new CamelToSnake();
+		}
 
 		if (!static::$booted) {
 			AnnotationRegistry::registerAutoloadNamespace('\IainConnor\GameMaker\Annotations', static::getSrcRoot());
@@ -69,12 +81,16 @@ class GameMaker {
 		/** @var Controller|null $controllerAnnotation */
 		$controllerAnnotation = static::$annotationReader->getClassAnnotation($reflectedClass, Controller::class);
 
-		foreach ($reflectedClass->getMethods() as $reflectionMethod) {
-			if ( static::$annotationReader->getMethodAnnotation($reflectionMethod, IgnoreHttpMethod::class) === null ) {
+		foreach ($reflectedClass->getMethods(\ReflectionMethod::IS_PUBLIC) as $reflectionMethod) {
+			if (static::$annotationReader->getMethodAnnotation($reflectionMethod, IgnoreHttpMethod::class) === null) {
 				$httpMethod = static::getFullHttpMethod($reflectionMethod, $apiAnnotation, $controllerAnnotation);
-				if ( $httpMethod !== null ) {
+
+				if ($httpMethod !== null) {
+					$inputs = static::getInputsForMethod($reflectionMethod);
+					//var_dump($httpMethod);
+
 					foreach (static::$annotationReader->getMethodAnnotations($reflectionMethod) as $methodAnnotation) {
-						var_dump ( $httpMethod );
+						//var_dump($httpMethod);
 					}
 				}
 			}
@@ -96,7 +112,7 @@ class GameMaker {
 		$definedMethod = static::$annotationReader->getMethodAnnotation($reflectionMethod, HttpMethod::class);
 
 		if ( $definedMethod === null ) {
-			$definedMethod = static::guessHttpMethodFromMethodName($reflectionMethod->getShortName());
+			$definedMethod = static::guessHttpMethodFromMethod($reflectionMethod);
 		}
 
 		if ( $definedMethod !== null ) {
@@ -127,31 +143,39 @@ class GameMaker {
 	/**
 	 * If possible, makes an intelligent guess at the type of HTTP method being described.
 	 *
-	 * @param $methodName
+	 * @param \ReflectionMethod $method
 	 * @return HttpMethod|null
 	 */
-	protected static function guessHttpMethodFromMethodName($methodName) {
-		$guessMap = [
-			GET::class,
-			POST::class,
-			PUT::class,
-			PATCH::class,
-			DELETE::class,
-			HEAD::class
-		];
+	protected static function guessHttpMethodFromMethod(\ReflectionMethod $method) {
 
-		foreach ( $guessMap as $guess ) {
-			if ( substr(strtolower($methodName), 0, strlen(static::getAfterLastSlash($guess))) == strtolower(static::getAfterLastSlash($guess)) ) {
+		$methodName = $method->getShortName();
+
+		foreach ( HttpMethod::$allHttpMethods as $guess ) {
+			$guessFriendlyName = static::getAfterLastSlash($guess);
+
+			if ( substr(strtolower($methodName), 0, strlen($guessFriendlyName)) == strtolower($guessFriendlyName) ) {
 
 				/** @var HttpMethod $httpMethod */
 				$httpMethod = new $guess();
-				$httpMethod->path = strtolower(preg_replace("/([A-Z_])/", "/$1", substr($methodName, strlen(static::getAfterLastSlash($guess)))));
-				
+				$methodLessHttpMethod = lcfirst(substr($methodName, strlen($guessFriendlyName)));
+
+				$httpMethod->path = "/" . static::$functionToPathNamingConvention->convert($methodLessHttpMethod);
+
 				return $httpMethod;
 			}
 		}
 
 		return null;
+	}
+
+	protected static function getInputsForMethod(\ReflectionMethod $method) {
+
+
+		foreach (static::$annotationReader->getMethodAnnotations($method) as $methodAnnotation) {
+			var_dump ( $methodAnnotation );
+		}
+
+		echo "-----\n";
 	}
 
 	/**
@@ -163,6 +187,16 @@ class GameMaker {
 	public static function setAnnotationReader($annotationReader) {
 
 		self::$annotationReader = $annotationReader;
+	}
+
+	/**
+	 * Set the naming convention to use when guessing the path for a function name.
+	 *
+	 * @param NamingConvention $functionToPathNamingConvention
+	 */
+	public static function setFunctionToPathNamingConvention($functionToPathNamingConvention) {
+
+		self::$functionToPathNamingConvention = $functionToPathNamingConvention;
 	}
 
 	public static function getProjectRoot() {
