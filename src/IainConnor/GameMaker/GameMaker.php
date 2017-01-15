@@ -102,6 +102,16 @@ class GameMaker {
 					$endpoint->httpMethod = $httpMethod;
 					$endpoint->inputs = static::getInputsForMethod($reflectionMethod, $httpMethod);
 
+					foreach ( array_map("trim", explode("\n", preg_replace("/^(\s*)(\/*)(\**)(\/*)/m", "", $reflectionMethod->getDocComment()))) as $docblockLine ) {
+						if ( $docblockLine && substr($docblockLine, 0, 1) != "@" ) {
+							$endpoint->description .= $docblockLine . "\n";
+						}
+					}
+					if ( $endpoint->description ) {
+						$endpoint->description = substr($endpoint->description, 0, strlen($endpoint->description) - 1);
+					}
+
+
 					$endpoints[] = $endpoint;
 				}
 			}

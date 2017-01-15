@@ -18,4 +18,7 @@ class Endpoint {
 
 	/** @var Output[] */
 	public $outputs;
+
+	/** @var string|null */
+	public $description;
 }
