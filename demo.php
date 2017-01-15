@@ -76,7 +76,7 @@ class Foo {
 	 * Inputs can be type-hinted as one of a set of possible values.
 	 * Inputs are required unless defaulted or type-hinted as null.
 	 * @\IainConnor\GameMaker\Annotations\Input(enum={"yes", "no"})
-	 * @param null|int $baz An optional integer.
+	 * @param null|string $baz An optional string boolean.
 	 */
 	public function sit($foo, array $bar, $baz = null) {
 
@@ -114,11 +114,4 @@ class Foo {
 	}
 }
 
-class Bar {
-	public static function validateMe($input) {
-
-		return $input > 10;
-	}
-}
-
-\IainConnor\GameMaker\GameMaker::getEndpointsForController(Foo::class);
+var_dump ( \IainConnor\GameMaker\GameMaker::getEndpointsForController(Foo::class) );

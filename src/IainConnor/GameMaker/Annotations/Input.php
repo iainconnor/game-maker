@@ -17,10 +17,10 @@ class Input {
 
 	public $name;
 
-	public $validator;
+	public $variableName;
 
 	/**
-	 * @Enum({"QUERY", "FORM", "BODY", "HEADER"})
+	 * @Enum({"PATH", "QUERY", "FORM", "BODY", "HEADER"})
 	 */
 	public $in;
 

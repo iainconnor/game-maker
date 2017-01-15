@@ -45,12 +45,22 @@ class GameMaker {
 	protected static $functionToPathNamingConvention;
 
 	/**
+	 * Naming convention to use when guessing the input name for a given variable name.
+	 * @var NamingConvention
+	 */
+	protected static $variableNameToInputNamingConvention;
+
+	/**
 	 * Boot and ensure requirements are filled.
 	 */
 	protected static function boot() {
 
 		if (static::$functionToPathNamingConvention == null) {
 			static::$functionToPathNamingConvention = new CamelToSnake();
+		}
+
+		if (static::$variableNameToInputNamingConvention == null) {
+			static::$variableNameToInputNamingConvention = new CamelToSnake();
 		}
 
 		if (!static::$booted) {
@@ -84,16 +94,15 @@ class GameMaker {
 		$controllerAnnotation = static::$annotationReader->getClassAnnotation($reflectedClass, Controller::class);
 
 		foreach ($reflectedClass->getMethods(\ReflectionMethod::IS_PUBLIC) as $reflectionMethod) {
+			$endpoint = new Endpoint();
 			if (static::$annotationReader->getMethodAnnotation($reflectionMethod, IgnoreHttpMethod::class) === null) {
 				$httpMethod = static::getFullHttpMethod($reflectionMethod, $apiAnnotation, $controllerAnnotation);
 
 				if ($httpMethod !== null) {
-					$inputs = static::getInputsForMethod($reflectionMethod);
-					//var_dump($httpMethod);
+					$endpoint->httpMethod = $httpMethod;
+					$endpoint->inputs = static::getInputsForMethod($reflectionMethod, $httpMethod);
 
-					foreach (static::$annotationReader->getMethodAnnotations($reflectionMethod) as $methodAnnotation) {
-						//var_dump($httpMethod);
-					}
+					$endpoints[] = $endpoint;
 				}
 			}
 		}
@@ -170,20 +179,24 @@ class GameMaker {
 		return null;
 	}
 
-	protected static function getInputsForMethod(\ReflectionMethod $method) {
+	/**
+	 * @param \ReflectionMethod $method
+	 * @param HttpMethod $httpMethod
+	 * @return Annotations\Input[]
+	 */
+	protected static function getInputsForMethod(\ReflectionMethod $method, HttpMethod $httpMethod) {
 		/** @var Input[] $inputs */
 		$inputs = [];
 
 		$methodAnnotations = static::$annotationReader->getMethodAnnotations($method);
 
-		foreach ($methodAnnotations as $key => $methodAnnotation) {
+		foreach ($methodAnnotations as $key => &$methodAnnotation) {
 			$input = null;
 
 			if ( $methodAnnotation instanceof Input ) {
 				$input = $methodAnnotation;
 
-
-				if ( $methodAnnotations[$key + 1] instanceof  TypeHint ) {
+				if ( array_key_exists($key + 1, $methodAnnotations) && $methodAnnotations[$key + 1] instanceof  TypeHint ) {
 					// Check if the input annotation is followed by a type hint.
 					// If it is, merge them.
 
@@ -199,13 +212,44 @@ class GameMaker {
 				$input->typeHint = $methodAnnotation;
 			}
 
-			// Fill in the blanks with rational defaults.
-			if ( $input->)
+			if ( $input != null ) {
+				// Fill in the blanks with rational defaults.
 
-			$inputs[] = $input;
+				if ($input->name == null) {
+					$input->name = static::$variableNameToInputNamingConvention->convert(substr($input->typeHint->variableName, 1));
+				}
+
+				if ( $input->variableName == null ) {
+					$input->variableName = $input->typeHint->variableName;
+				}
+
+				if ($input->in == null) {
+					if ( static::doesVariableExistInPath($input->name, $httpMethod) ) {
+						$input->in = "PATH";
+					} else {
+						$input->in = static::getDefaultLocationForHttpMethod($httpMethod);
+					}
+				}
+
+				$inputs[] = $input;
+			}
 		}
 
-		echo "-----\n";
+		return $inputs;
+	}
+
+	protected static function getDefaultLocationForHttpMethod (HttpMethod $httpMethod ) {
+		switch ($httpMethod) {
+			case POST::class:
+			case PUT::class:
+			case PATCH::class:
+				return "FORM";
+			case GET::class:
+			case DELETE::class:
+			case HEAD::class:
+			default:
+				return "QUERY";
+		}
 	}
 
 	/**
@@ -229,6 +273,16 @@ class GameMaker {
 		self::$functionToPathNamingConvention = $functionToPathNamingConvention;
 	}
 
+	/**
+	 * Set the naming convention to use when guessing the input name for a given variable name.
+	 *
+	 * @param NamingConvention $variableNameToInputNamingConvention
+	 */
+	public static function setVariableNameToInputNamingConvention($variableNameToInputNamingConvention) {
+
+		self::$variableNameToInputNamingConvention = $variableNameToInputNamingConvention;
+	}
+
 	public static function getProjectRoot() {
 
 		return static::getSrcRoot() . "/..";
@@ -249,5 +303,10 @@ class GameMaker {
 	protected static function getAfterLastSlash($string) {
 
 		return substr($string, strrpos($string, '\\') + 1);
+	}
+
+	protected static function doesVariableExistInPath($variable, HttpMethod $httpMethod) {
+
+		return strpos($httpMethod->path, "{" . $variable . "}") !== false;
 	}
 }

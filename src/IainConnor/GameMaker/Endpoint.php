@@ -11,11 +11,11 @@ use IainConnor\GameMaker\Annotations\Output;
 class Endpoint {
 
 	/** @var HttpMethod */
-	protected $httpMethod;
+	public $httpMethod;
 
 	/** @var Input[] */
-	protected $inputs;
+	public $inputs;
 
 	/** @var Output[] */
-	protected $outputs;
+	public $outputs;
 }
