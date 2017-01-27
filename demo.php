@@ -103,7 +103,7 @@ class Foo {
 
 	/**
 	 * If, for whatever reason, you don't want to have (some or any) inputs in your method signature,
-	 * you can still document them, so long as you provide a type hint.
+	 * you can still document them, so long as you provide a type hint manually in the annotation.
 	 *
 	 * @\IainConnor\GameMaker\Annotations\GET(path="/adipiscing")
 	 *
@@ -112,6 +112,83 @@ class Foo {
 	public function adipiscing() {
 
 	}
+
+    /**
+     * You can define output from the route like any other return value.
+     *
+     * @return string Just a demo string.
+     */
+	public function getNullam() {
+
+    }
+
+    /**
+     * You can define multiple possible returns.
+     *
+     * And define the HTTP status code for each.
+     * @\IainConnor\GameMaker\Annotations\Output(statusCode=202)
+     * @return string Just a demo string.
+     *
+     * A sane default HTTP status code will be guessed if none is provided.
+     * This is based on both the return type and the HTTP method.
+     * @return null Woah, no output.
+     *
+     * If you don't want to use the `@return` tag, you can also manually specify the type hint.
+     * @\IainConnor\GameMaker\Annotations\Output(statusCode=200, typeHint="int Just a demo int.")
+     */
+    public function deleteLibero() {
+
+    }
+
+    /**
+     * It's fairly common that your API will use a wrapper for some standard output format, and just fill in specific
+     * gaps in that format.
+     *
+     * Just return an instance of the wrapper.
+     * @return Bar The wrapper.
+     *
+     * And fill in specific components in that wrapper.
+     * @\IainConnor\GameMaker\Annotations\WrapperComponent(property="data")
+     * @return string[] The data node in the wrapper.
+     */
+    public function getBibendum() {
+
+    }
+}
+
+/**
+ * Another demo class.
+ *
+ * You can define a wrapper used for all routes in a Class.
+ * And define a default property to fill instead of using `WrapperComponent`.
+ * @\IainConnor\GameMaker\Annotations\OutputWrapper(class="Bar", defaultProperty="data")
+ */
+class Baz {
+
+    /**
+     * @return int[] The data node for the wrapper.
+     */
+    public function putEuismod() {
+
+    }
+}
+
+class Bar {
+    /**
+     * @var object[]
+     */
+    public $data;
+
+    /**
+     * @var string[]
+     */
+    public $errors = [];
+
+    /**
+     * @var string[]
+     */
+    public $messages = [];
 }
 
 var_dump ( \IainConnor\GameMaker\GameMaker::getEndpointsForController(Foo::class) );
+var_dump ( \IainConnor\GameMaker\GameMaker::getEndpointsForController(Baz::class) );

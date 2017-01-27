@@ -6,6 +6,8 @@ namespace IainConnor\GameMaker;
 
 use IainConnor\Cornucopia\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
+use IainConnor\Cornucopia\Annotations\InputTypeHint;
+use IainConnor\Cornucopia\Annotations\OutputTypeHint;
 use IainConnor\Cornucopia\Annotations\TypeHint;
 use IainConnor\Cornucopia\CachedReader;
 use Doctrine\Common\Cache\ArrayCache;
@@ -17,6 +19,7 @@ use IainConnor\GameMaker\Annotations\HEAD;
 use IainConnor\GameMaker\Annotations\HttpMethod;
 use IainConnor\GameMaker\Annotations\IgnoreHttpMethod;
 use IainConnor\GameMaker\Annotations\Input;
+use IainConnor\GameMaker\Annotations\Output;
 use IainConnor\GameMaker\Annotations\PATCH;
 use IainConnor\GameMaker\Annotations\POST;
 use IainConnor\GameMaker\Annotations\PUT;
@@ -101,6 +104,7 @@ class GameMaker {
 				if ($httpMethod !== null) {
 					$endpoint->httpMethod = $httpMethod;
 					$endpoint->inputs = static::getInputsForMethod($reflectionMethod, $httpMethod);
+                    $endpoint->outputs = static::getOutputsForMethod($reflectionMethod, $httpMethod);
 
 					foreach ( array_map("trim", explode("\n", preg_replace("/^(\s*)(\/*)(\**)(\/*)/m", "", $reflectionMethod->getDocComment()))) as $docblockLine ) {
 						if ( $docblockLine && substr($docblockLine, 0, 1) != "@" ) {
@@ -178,7 +182,10 @@ class GameMaker {
 
 				/** @var HttpMethod $httpMethod */
 				$httpMethod = new $guess();
-				$methodLessHttpMethod = lcfirst(substr($methodName, strlen($guessFriendlyName)));
+
+				$methodLessHttpMethod = substr($methodName, strlen($guessFriendlyName));
+                $methodLessHttpMethod = static::escapeInputsInMethod($methodLessHttpMethod, $method);
+				$methodLessHttpMethod = lcfirst($methodLessHttpMethod);
 
 				$httpMethod->path = "/" . static::$functionToPathNamingConvention->convert($methodLessHttpMethod);
 
@@ -188,6 +195,96 @@ class GameMaker {
 
 		return null;
 	}
+
+    /**
+     * Returns a version of $methodName with all occurrences of its inputs escaped as /{Input}/.
+     * Used for guessing path names based on method names.
+     *
+     * @param $methodName
+     * @param \ReflectionMethod $method
+     * @return string
+     */
+	protected static function escapeInputsInMethod($methodName, \ReflectionMethod $method) {
+        $methodAnnotations = static::$annotationReader->getMethodAnnotations($method);
+
+        foreach ($methodAnnotations as $key => $methodAnnotation) {
+
+            if ( $methodAnnotation instanceof Input && $methodAnnotation->typeHint != null ) {
+                $typeHint = TypeHint::parseToInstanceOf(InputTypeHint::class, $methodAnnotation->typeHint, static::$annotationReader->getMethodImports($method));
+
+                if ( $typeHint != null ) {
+                    $methodName = static::escapeInputInMethodName($typeHint->variableName, $methodName);
+                }
+            } else if ( $methodAnnotation instanceof InputTypeHint ) {
+                $methodName = static::escapeInputInMethodName($methodAnnotation->variableName, $methodName);
+            }
+        }
+
+        $methodParameters = $method->getParameters();
+
+        foreach ($methodParameters as $methodParameter) {
+
+            $methodName = static::escapeInputInMethodName($methodParameter->getName(), $methodName);
+        }
+
+
+        return $methodName;
+    }
+
+    /**
+     * Returns a version of $methodName with all occurrences of $input escaped as /{Input}/.
+     * Used for guessing path names based on method names.
+     *
+     * @param string $input
+     * @param string $methodName
+     * @return string
+     */
+    protected static function escapeInputInMethodName($input, $methodName) {
+
+        return trim(preg_replace("/(?<!{)(" . preg_quote(ucfirst($input), '/') . ")(?!})/", '/{$1}/', $methodName), '/');
+    }
+
+    protected static function getOutputsForMethod(\ReflectionMethod $method, HttpMethod $httpMethod) {
+        /** @var Output[] $outputs */
+        $outputs = [];
+
+        $methodAnnotations = static::$annotationReader->getMethodAnnotations($method);
+
+        foreach ($methodAnnotations as $key => &$methodAnnotation) {
+
+            $output = null;
+
+            if ( $methodAnnotation instanceof Output ) {
+                $output = $methodAnnotation;
+
+                if ( array_key_exists($key + 1, $methodAnnotations) && $methodAnnotations[$key + 1] instanceof OutputTypeHint ) {
+                    // Check if the output annotation is followed by a type hint.
+                    // If it is, merge them.
+
+                    $output->typeHint = $methodAnnotations[$key + 1];
+                    unset($methodAnnotations[$key + 1]);
+                } else if ( is_string($output->typeHint) ) {
+                    // Check if type hint is a string. If it is, process it.
+
+                    $output->typeHint = TypeHint::parseToInstanceOf(OutputTypeHint::class, $output->typeHint, static::$annotationReader->getMethodImports($method));
+                }
+            } else if ( $methodAnnotation instanceof OutputTypeHint ) {
+                $output = new Output();
+                $output->typeHint = $methodAnnotation;
+            }
+
+            if ( $output != null ) {
+                // Fill in the blanks with rational defaults.
+                if ( $output->statusCode == null ) {
+                    $output->statusCode = $output->typeHint == null || (count($output->typeHint->types) == 1 && $output->typeHint->types[0]->type == null) ? HttpStatusCodes::NO_CONTENT : static::getDefaultHttpStatusCodeForHttpMethod($httpMethod);;
+                }
+
+                $outputs[] = $output;
+            }
+        }
+
+        return $outputs;
+    }
 
 	/**
 	 * @param \ReflectionMethod $method
@@ -206,7 +303,7 @@ class GameMaker {
 			if ( $methodAnnotation instanceof Input ) {
 				$input = $methodAnnotation;
 
-				if ( array_key_exists($key + 1, $methodAnnotations) && $methodAnnotations[$key + 1] instanceof  TypeHint ) {
+				if ( array_key_exists($key + 1, $methodAnnotations) && $methodAnnotations[$key + 1] instanceof InputTypeHint ) {
 					// Check if the input annotation is followed by a type hint.
 					// If it is, merge them.
 
@@ -215,9 +312,9 @@ class GameMaker {
 				} else if ( is_string($input->typeHint) ) {
 					// Check if type hint is a string. If it is, process it.
 
-					$input->typeHint = TypeHint::parse($input->typeHint, static::$annotationReader->getMethodImports($method));
+					$input->typeHint = TypeHint::parseToInstanceOf(InputTypeHint::class, $input->typeHint, static::$annotationReader->getMethodImports($method));
 				}
-			} else if ( $methodAnnotation instanceof TypeHint ) {
+			} else if ( $methodAnnotation instanceof InputTypeHint ) {
 				$input = new Input();
 				$input->typeHint = $methodAnnotation;
 			}
@@ -226,7 +323,7 @@ class GameMaker {
 				// Fill in the blanks with rational defaults.
 
 				if ($input->name == null) {
-					$input->name = static::$variableNameToInputNamingConvention->convert(substr($input->typeHint->variableName, 1));
+					$input->name = static::$variableNameToInputNamingConvention->convert($input->typeHint->variableName);
 				}
 
 				if ( $input->variableName == null ) {
@@ -247,6 +344,21 @@ class GameMaker {
 
 		return $inputs;
 	}
+
+	protected static function getDefaultHttpStatusCodeForHttpMethod (HttpMethod $httpMethod) {
+        switch ($httpMethod) {
+            case POST::class:
+            case PUT::class:
+            case PATCH::class:
+                return HttpStatusCodes::ACCEPTED;
+            case DELETE::class:
+                return HttpStatusCodes::NO_CONTENT;
+            case GET::class:
+            case HEAD::class:
+            default:
+                return HttpStatusCodes::OK;
+        }
+    }
 
 	protected static function getDefaultLocationForHttpMethod (HttpMethod $httpMethod ) {
 		switch ($httpMethod) {

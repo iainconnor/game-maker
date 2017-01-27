@@ -20,7 +20,7 @@ class CamelToSnake implements NamingConvention {
 
 	public function convert($input) {
 
-		return strtolower(preg_replace("/([A-Z])/", $this->replacementCharacter . "$1", $input));
+		return strtolower(preg_replace("/(?<!{)([A-Z])(?!})/", $this->replacementCharacter . "$1", $input));
 	}
 
 }
