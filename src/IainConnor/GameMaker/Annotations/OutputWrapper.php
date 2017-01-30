@@ -3,6 +3,7 @@
 
 namespace IainConnor\GameMaker\Annotations;
 
+use Doctrine\Common\Annotations\Annotation\Required;
 use Doctrine\Common\Annotations\Annotation\Target;
 
 /**
@@ -15,11 +16,13 @@ class OutputWrapper
 {
     /**
      * @var string
+     * @Required()
      */
     public $class;
 
     /**
      * @var string
+     * @Required()
      */
     public $defaultProperty;
 }

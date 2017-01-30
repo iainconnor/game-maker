@@ -3,6 +3,7 @@
 
 namespace IainConnor\GameMaker\Annotations;
 
+use Doctrine\Common\Annotations\Annotation\Required;
 use Doctrine\Common\Annotations\Annotation\Target;
 
 /**
@@ -15,6 +16,7 @@ class WrapperComponent
 {
     /**
      * @var string
+     * @Required()
      */
     public $property;
 }

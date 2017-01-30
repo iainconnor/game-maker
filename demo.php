@@ -190,5 +190,15 @@ class Bar {
     public $messages = [];
 }
 
-var_dump ( \IainConnor\GameMaker\GameMaker::getEndpointsForController(Foo::class) );
-var_dump ( \IainConnor\GameMaker\GameMaker::getEndpointsForController(Baz::class) );
+$gameMaker = \IainConnor\GameMaker\GameMaker::instance();
+
+// You should always set an AnnotationReader to improve performance.
+// @see http://docs.doctrine-project.org/projects/doctrine-common/en/latest/reference/annotations.html
+$gameMaker->setAnnotationReader(
+    new \IainConnor\Cornucopia\CachedReader(
+        new \IainConnor\Cornucopia\AnnotationReader(),
+        new \Doctrine\Common\Cache\ArrayCache()
+    ));
+
+var_dump ( $gameMaker->parseController(Foo::class) );
+var_dump ( $gameMaker->parseController(Baz::class) );

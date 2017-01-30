@@ -14,5 +14,4 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * @Target("CLASS")
  */
 class Controller extends Path {
-
 }
