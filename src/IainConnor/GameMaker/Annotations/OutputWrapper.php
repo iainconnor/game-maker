@@ -10,7 +10,7 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * Class OutputWrapper
  * @package IainConnor\GameMaker\Annotations
  * @Annotation
- * @Target("CLASS")
+ * @Target({"CLASS", "METHOD"})
  */
 class OutputWrapper
 {
@@ -24,5 +24,5 @@ class OutputWrapper
      * @var string
      * @Required()
      */
-    public $defaultProperty;
+    public $property;
 }

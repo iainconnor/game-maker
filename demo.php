@@ -52,7 +52,7 @@ class Foo {
 	/**
 	 * But you can ignore public functions as well.
 	 *
-	 * @\IainConnor\GameMaker\Annotations\IgnoreHttpMethod()
+	 * @\IainConnor\GameMaker\Annotations\IgnoreEndpoint()
 	 */
 	public function imPublic() {
 
@@ -76,7 +76,7 @@ class Foo {
 	 * Inputs can be type-hinted as one of a set of possible values.
 	 * Inputs are required unless defaulted or type-hinted as null.
 	 * @\IainConnor\GameMaker\Annotations\Input(enum={"yes", "no"})
-	 * @param null|string $baz An optional string boolean.
+	 * @param null|string $baz An optional stringey boolean.
 	 */
 	public function sit($foo, array $bar, $baz = null) {
 
@@ -144,12 +144,15 @@ class Foo {
      * It's fairly common that your API will use a wrapper for some standard output format, and just fill in specific
      * gaps in that format.
      *
-     * Just return an instance of the wrapper.
-     * @return Bar The wrapper.
      *
-     * And fill in specific components in that wrapper.
-     * @\IainConnor\GameMaker\Annotations\WrapperComponent(property="data")
+     * Define the wrapper class and the property to override by default.
+     * @\IainConnor\GameMaker\Annotations\OutputWrapper(class="Bar", property="data")
+     *
+     * And then the property you return will fill in that property in the response.
+     * @\IainConnor\GameMaker\Annotations\Output(outputWrapperProvider=true)
      * @return string[] The data node in the wrapper.
+     *
+     * @return null Woah, no output.
      */
     public function getBibendum() {
 
@@ -160,22 +163,33 @@ class Foo {
  * Another demo class.
  *
  * You can define a wrapper used for all routes in a Class.
- * And define a default property to fill instead of using `WrapperComponent`.
- * @\IainConnor\GameMaker\Annotations\OutputWrapper(class="Bar", defaultProperty="data")
+ * As before, just define the wrapper class and the property to override by default.
+ * @\IainConnor\GameMaker\Annotations\OutputWrapper(class="Bar", property="data")
  */
 class Baz {
 
     /**
+     * If there's only one return type, it will be used for the OutputWrapper by default.
      * @return int[] The data node for the wrapper.
      */
     public function putEuismod() {
+
+    }
+
+    /**
+     * You can ignore the OutputWrapper for certain endpoints.
+     *
+     * @\IainConnor\GameMaker\Annotations\IgnoreOutputWrapper()
+     * @return string Just a string.
+     */
+    public function deletePosuere() {
 
     }
 }
 
 class Bar {
     /**
-     * @var object[]
+     * @var array
      */
     public $data;
 

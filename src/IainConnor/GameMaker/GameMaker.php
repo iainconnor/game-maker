@@ -17,7 +17,8 @@ use IainConnor\GameMaker\Annotations\DELETE;
 use IainConnor\GameMaker\Annotations\GET;
 use IainConnor\GameMaker\Annotations\HEAD;
 use IainConnor\GameMaker\Annotations\HttpMethod;
-use IainConnor\GameMaker\Annotations\IgnoreHttpMethod;
+use IainConnor\GameMaker\Annotations\IgnoreEndpoint;
+use IainConnor\GameMaker\Annotations\IgnoreOutputWrapper;
 use IainConnor\GameMaker\Annotations\Input;
 use IainConnor\GameMaker\Annotations\Output;
 use IainConnor\GameMaker\Annotations\OutputWrapper;
@@ -126,7 +127,7 @@ class GameMaker {
 
 		foreach ($reflectedClass->getMethods(\ReflectionMethod::IS_PUBLIC) as $reflectionMethod) {
 			$endpoint = new Endpoint();
-			if ($this->annotationReader->getMethodAnnotation($reflectionMethod, IgnoreHttpMethod::class) === null) {
+			if ($this->annotationReader->getMethodAnnotation($reflectionMethod, IgnoreEndpoint::class) === null) {
 				$httpMethod = $this->getFullHttpMethod($reflectionMethod, $apiAnnotation, $controllerAnnotation);
 
 				if ($httpMethod !== null) {
@@ -285,6 +286,9 @@ class GameMaker {
         /** @var Output[] $outputs */
         $outputs = [];
 
+        /** @var Output $outputForWrapper */
+        $outputForWrapper = null;
+
         $methodAnnotations = $this->annotationReader->getMethodAnnotations($method);
 
         foreach ($methodAnnotations as $key => &$methodAnnotation) {
@@ -294,16 +298,22 @@ class GameMaker {
             if ( $methodAnnotation instanceof Output ) {
                 $output = $methodAnnotation;
 
-                if ( array_key_exists($key + 1, $methodAnnotations) && $methodAnnotations[$key + 1] instanceof OutputTypeHint ) {
-                    // Check if the output annotation is followed by a type hint.
-                    // If it is, merge them.
-
-                    $output->typeHint = $methodAnnotations[$key + 1];
-                    unset($methodAnnotations[$key + 1]);
-                } else if ( is_string($output->typeHint) ) {
+                if ( is_string($output->typeHint) ) {
                     // Check if type hint is a string. If it is, process it.
 
                     $output->typeHint = TypeHint::parseToInstanceOf(OutputTypeHint::class, $output->typeHint, $this->annotationReader->getMethodImports($method));
+                } else {
+                    for ($i = $key + 1; $i <= key(array_slice($methodAnnotations, -1, 1, true)); $i++) {
+                        // Check if the output annotation is followed by a type hint.
+                        // If it is, merge them.
+                        if ($methodAnnotations[$i] instanceof OutputTypeHint) {
+                            $output->typeHint = $methodAnnotations[$i];
+                            unset($methodAnnotations[$i]);
+                            break;
+                        } else if ($methodAnnotations[$i] instanceof Output) {
+                            break;
+                        }
+                    }
                 }
             } else if ( $methodAnnotation instanceof OutputTypeHint ) {
                 $output = new Output();
@@ -323,22 +333,38 @@ class GameMaker {
                     }
                 }
 
-                // Swap with defined output wrapper if appropriate.
-                /*
-                if ( $outputWrapperAnnotation != null ) {
-                    $reflectedOutputWrapperClass = new \ReflectionClass($class);
-
-                    $outputWrapper = new $outputWrapperAnnotation->class();
-
-                    $outputWrapper->{$outputWrapperAnnotation->defaultProperty} = $output->typeHint;
-                    $output->typeHint->types = [$outputWrapper];
-                    //$outputWrapper->{$outputWrapperAnnotation->defaultProperty} = $output;
-                    //$output = $outputWrapper;
-                }
-                */
-
                 $outputs[] = $output;
+
+                // Take either the first or the specified output for the wrapper.
+                if ( $outputForWrapper == null || $output->outputWrapperProvider ) {
+                    $outputForWrapper = $output;
+                }
             }
+        }
+
+        // Get the specific output wrapper, if defined.
+        $outputWrapperAnnotation = $this->annotationReader->getMethodAnnotation($method, OutputWrapper::class) ? : $outputWrapperAnnotation;
+
+        // Swap with defined output wrapper, if appropriate.
+        if ( $outputForWrapper != null && $outputWrapperAnnotation != null && $this->annotationReader->getMethodAnnotation($method, IgnoreOutputWrapper::class) == null ) {
+            // Create a unique name for this type of output wrapper for the specified type.
+            $outputWrapperUniqueNameForType = $outputWrapperAnnotation->class . "Of" . ucfirst($outputForWrapper->typeHint->types[0]->type) . ($outputForWrapper->typeHint->types[0]->genericType ? ucfirst($outputForWrapper->typeHint->types[0]->genericType) : "");
+
+            if ( !array_key_exists($outputWrapperUniqueNameForType, $parsedObjects) ) {
+                $this->parseObject($outputWrapperAnnotation->class, $parsedObjects);
+                $outputWrapperParsedObject = $parsedObjects[$outputWrapperAnnotation->class];
+                $outputWrapperParsedObject->uniqueName = $outputWrapperUniqueNameForType;
+                foreach ( $outputWrapperParsedObject->properties as $key=>$property ) {
+                    if ( $property->variableName == $outputWrapperAnnotation->property ) {
+                        $outputWrapperParsedObject->properties[$key]->types = $outputForWrapper->typeHint->types;
+                        break;
+                    }
+                }
+
+                $parsedObjects[$outputWrapperUniqueNameForType] = $outputWrapperParsedObject;
+                unset($parsedObjects[$outputWrapperAnnotation->class]);
+            }
+
         }
 
         return $outputs;
@@ -398,17 +424,22 @@ class GameMaker {
 			if ( $methodAnnotation instanceof Input ) {
 				$input = $methodAnnotation;
 
-				if ( array_key_exists($key + 1, $methodAnnotations) && $methodAnnotations[$key + 1] instanceof InputTypeHint ) {
-					// Check if the input annotation is followed by a type hint.
-					// If it is, merge them.
-
-					$input->typeHint = $methodAnnotations[$key + 1];
-					unset($methodAnnotations[$key + 1]);
-				} else if ( is_string($input->typeHint) ) {
+				if ( is_string($input->typeHint) ) {
 					// Check if type hint is a string. If it is, process it.
-
 					$input->typeHint = TypeHint::parseToInstanceOf(InputTypeHint::class, $input->typeHint, $this->annotationReader->getMethodImports($method));
-				}
+				} else {
+                    for ($i = $key + 1; $i <= key(array_slice($methodAnnotations, -1, 1, true)); $i++) {
+                        // Check if the input annotation is followed by a type hint.
+                        // If it is, merge them.
+                        if ($methodAnnotations[$i] instanceof InputTypeHint) {
+                            $input->typeHint = $methodAnnotations[$i];
+                            unset($methodAnnotations[$i]);
+                            break;
+                        } else if ($methodAnnotations[$i] instanceof Input) {
+                            break;
+                        }
+                    }
+                }
 			} else if ( $methodAnnotation instanceof InputTypeHint ) {
 				$input = new Input();
 				$input->typeHint = $methodAnnotation;

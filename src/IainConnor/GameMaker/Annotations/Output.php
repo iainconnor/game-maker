@@ -26,4 +26,9 @@ class Output {
      * @var string
      */
     public $typeHint;
+
+    /**
+     * @var bool
+     */
+    public $outputWrapperProvider;
 }
