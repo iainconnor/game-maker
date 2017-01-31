@@ -4,6 +4,7 @@
 namespace IainConnor\GameMaker;
 
 
+use hanneskod\classtools\Iterator\ClassIterator;
 use IainConnor\Cornucopia\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
 use IainConnor\Cornucopia\Annotations\InputTypeHint;
@@ -27,6 +28,8 @@ use IainConnor\GameMaker\Annotations\POST;
 use IainConnor\GameMaker\Annotations\PUT;
 use IainConnor\GameMaker\NamingConventions\CamelToSnake;
 use IainConnor\GameMaker\NamingConventions\NamingConvention;
+use IainConnor\GameMaker\Utils\HttpStatusCodes;
+use Symfony\Component\Finder\Finder;
 
 class GameMaker {
 
@@ -58,16 +61,23 @@ class GameMaker {
 	protected $maxRecursionDepth = 3;
 
     /**
+     * @var Finder
+     */
+    private $finder;
+
+    /**
      * GameMaker constructor.
      * @param CachedReader $annotationReader
      * @param NamingConvention $functionToPathNamingConvention
      * @param NamingConvention $variableNameToInputNamingConvention
+     * @param Finder $finder
      */
-    public function __construct(CachedReader $annotationReader, NamingConvention $functionToPathNamingConvention, NamingConvention $variableNameToInputNamingConvention)
+    public function __construct(CachedReader $annotationReader, NamingConvention $functionToPathNamingConvention, NamingConvention $variableNameToInputNamingConvention, Finder $finder)
     {
         $this->annotationReader = $annotationReader;
         $this->functionToPathNamingConvention = $functionToPathNamingConvention;
         $this->variableNameToInputNamingConvention = $variableNameToInputNamingConvention;
+        $this->finder = $finder;
     }
 
     /**
@@ -96,12 +106,59 @@ class GameMaker {
                 false
             ),
             new CamelToSnake(),
-            new CamelToSnake()
+            new CamelToSnake(),
+            new Finder()
         );
 	}
 
     /**
-     * Retrieve all endpoints defined in the specified class.
+     * Retrieve all endpoints and objects defined in the specified path.
+     *
+     * @param $path
+     * @param int $depth
+     * @return ControllerInformation[]
+     */
+	public function parseControllersInPath($path, $depth = 0) {
+
+	    return $this->parseControllersInNamespaceInPath(null, $path, $depth);
+    }
+
+    /**
+     * Retrieve all endpoints and objects defined in the specified namespace.
+     *
+     * @param $namespace
+     * @param $path
+     * @param int $depth
+     * @return ControllerInformation[]
+     */
+	public function parseControllersInNamespaceInPath($namespace, $path, $depth = 0) {
+        $classes = [];
+
+        $this->finder->sortByName();
+        $this->finder->in($path)->depth($depth)->name("*.php");
+
+        $iterator = new ClassIterator($this->finder);
+
+        /** @var \ReflectionClass $reflectionClass */
+        foreach ( $iterator->inNamespace($namespace) as $reflectionClass ) {
+            $classes[] = $reflectionClass->getName();
+        }
+
+        return $this->parseControllers($classes);
+    }
+
+    /**
+     * Retrieve all endpoints and objects defined in the specified classes.
+     *
+     * @param array $classes
+     * @return ControllerInformation[]
+     */
+    public function parseControllers(array $classes) {
+        return array_map([$this, "parseController"], $classes);
+    }
+
+    /**
+     * Retrieve all endpoints and objects defined in the specified class.
      *
      * @param $class
      * @return ControllerInformation
@@ -150,7 +207,7 @@ class GameMaker {
 			}
 		}
 
-		return new ControllerInformation($endpoints, array_values($parsedObjects));
+		return new ControllerInformation($class, $endpoints, array_values($parsedObjects));
 	}
 
 	/**
@@ -205,7 +262,7 @@ class GameMaker {
 		$methodName = $method->getShortName();
 
 		foreach ( HttpMethod::$allHttpMethods as $guess ) {
-			$guessFriendlyName = $this->getAfterLastSlash($guess);
+			$guessFriendlyName = GameMaker::getAfterLastSlash($guess);
 
 			if ( substr(strtolower($methodName), 0, strlen($guessFriendlyName)) == strtolower($guessFriendlyName) ) {
 
@@ -556,9 +613,9 @@ class GameMaker {
         return strpos($httpMethod->path, "{" . $variable . "}") !== false;
     }
 
-    protected function getAfterLastSlash($string) {
+    public static function getAfterLastSlash($string) {
 
-        return substr($string, strrpos($string, '\\') + 1);
+        return strpos($string, '\\') === false ? $string : substr($string, strrpos($string, '\\') + 1);
     }
 
 	public static function getProjectRoot() {

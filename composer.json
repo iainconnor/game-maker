@@ -11,7 +11,8 @@
     ],
     "minimum-stability": "dev",
     "require": {
-        "iainconnor/cornucopia": "dev-master"
+        "iainconnor/cornucopia": "dev-master",
+        "hanneskod/classtools": "~1.0"
     },
     "autoload": {
         "psr-0": {

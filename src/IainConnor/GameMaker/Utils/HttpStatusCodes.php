@@ -6,7 +6,7 @@
  * Time: 12:28 PM
  */
 
-namespace IainConnor\GameMaker;
+namespace IainConnor\GameMaker\Utils;
 
 
 class HttpStatusCodes {
@@ -64,4 +64,14 @@ class HttpStatusCodes {
     const INSUFFICIENT_STORAGE = 507;
     const BANDWIDTH_LIMIT_EXCEEDED = 509;
     const NOT_EXTENDED = 510;
+
+    public static function getDescriptionForCode($code) {
+        $reflectionClass = new \ReflectionClass(HttpStatusCodes::class);
+        foreach ( $reflectionClass->getConstants() as $name => $constant ) {
+            if ( $constant == $code ) {
+
+                return $name;
+            }
+        }
+    }
 }

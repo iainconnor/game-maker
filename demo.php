@@ -165,6 +165,9 @@ class Foo {
  * You can define a wrapper used for all routes in a Class.
  * As before, just define the wrapper class and the property to override by default.
  * @\IainConnor\GameMaker\Annotations\OutputWrapper(class="Bar", property="data")
+ *
+ * @\IainConnor\GameMaker\Annotations\API(path=MY_DOMAIN)
+ * @\IainConnor\GameMaker\Annotations\Controller(path="/baz")
  */
 class Baz {
 
@@ -189,17 +192,17 @@ class Baz {
 
 class Bar {
     /**
-     * @var array
+     * @var array The data.
      */
     public $data;
 
     /**
-     * @var string[]
+     * @var string[] Errors, if any.
      */
     public $errors = [];
 
     /**
-     * @var string[]
+     * @var string[] Human-readable messages, if any.
      */
     public $messages = [];
 }
@@ -214,5 +217,8 @@ $gameMaker->setAnnotationReader(
         new \Doctrine\Common\Cache\ArrayCache()
     ));
 
-var_dump ( $gameMaker->parseController(Foo::class) );
-var_dump ( $gameMaker->parseController(Baz::class) );
+$controllers = $gameMaker->parseControllers([Foo::class, Baz::class]);
+
+$markdown = new \IainConnor\GameMaker\Processors\Markdown("Demo", "Just a demonstration.");
+
+echo ( $markdown->processControllers($controllers) );
