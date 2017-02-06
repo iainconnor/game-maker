@@ -21,4 +21,9 @@ class Endpoint {
 
 	/** @var string|null */
 	public $description;
+
+    /**
+     * @var string
+     */
+	public $method;
 }

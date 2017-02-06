@@ -70,7 +70,8 @@ class Foo {
 	 * @param string $foo A string.
 	 *
 	 * The names the input referred to as by the HTTP call can also be customized.
-	 * @\IainConnor\GameMaker\Annotations\Input(name="custom_name")
+     * For array types, you can customize how the multiple values are input.
+	 * @\IainConnor\GameMaker\Annotations\Input(name="custom_name", arrayFormat="CSV")
 	 * @param string[] $bar An array of strings.
 	 *
 	 * Inputs can be type-hinted as one of a set of possible values.
@@ -116,7 +117,7 @@ class Foo {
     /**
      * You can define output from the route like any other return value.
      *
-     * @return string Just a demo string.
+     * @return Biz Just a demo Object.
      */
 	public function getNullam() {
 
@@ -207,6 +208,14 @@ class Bar {
     public $messages = [];
 }
 
+class Biz {
+    /** @var int The id. */
+    public $id;
+
+    /** @var string|null The username. */
+    public $userName;
+}
+
 $gameMaker = \IainConnor\GameMaker\GameMaker::instance();
 
 // You should always set an AnnotationReader to improve performance.
@@ -220,5 +229,7 @@ $gameMaker->setAnnotationReader(
 $controllers = $gameMaker->parseControllers([Foo::class, Baz::class]);
 
 $markdown = new \IainConnor\GameMaker\Processors\Markdown("Demo", "Just a demonstration.");
-
 echo ( $markdown->processControllers($controllers) );
+
+$swagger2 = new \IainConnor\GameMaker\Processors\Swagger2("Demo", "1.0", "Just a demonstration.");
+echo ( $swagger2->processControllers($controllers) );

@@ -12,6 +12,7 @@ use IainConnor\Cornucopia\Annotations\OutputTypeHint;
 use IainConnor\Cornucopia\Annotations\TypeHint;
 use IainConnor\Cornucopia\CachedReader;
 use Doctrine\Common\Cache\ArrayCache;
+use IainConnor\Cornucopia\Type;
 use IainConnor\GameMaker\Annotations\API;
 use IainConnor\GameMaker\Annotations\Controller;
 use IainConnor\GameMaker\Annotations\DELETE;
@@ -57,8 +58,11 @@ class GameMaker {
 	 */
 	protected $variableNameToInputNamingConvention;
 
-	/** @var int Maximum depth to recurse in parsed Objects */
+	/** @var int Maximum depth to recurse in parsed Objects. */
 	protected $maxRecursionDepth = 3;
+
+	/** @var string The default format for arrays. */
+	protected $defaultArrayFormat = "CSV";
 
     /**
      * @var Finder
@@ -154,16 +158,27 @@ class GameMaker {
      * @return ControllerInformation[]
      */
     public function parseControllers(array $classes) {
-        return array_map([$this, "parseController"], $classes);
+        $controllers = [];
+        /** @var ObjectInformation[] $parsedObjects */
+        $parsedObjects = [];
+
+        foreach ( $classes as $class ) {
+            $controller = $this->parseController($class, $parsedObjects);
+            $controllers[] = $controller;
+            $parsedObjects = array_merge($parsedObjects, $controller->parsedObjects);
+        }
+
+        return $controllers;
     }
 
     /**
      * Retrieve all endpoints and objects defined in the specified class.
      *
      * @param $class
+     * @param ObjectInformation[] $alreadyParsedObjects
      * @return ControllerInformation
      */
-	public function parseController($class) {
+	public function parseController($class, $alreadyParsedObjects = []) {
 
 		/** @var Endpoint[] $endpoints */
 		$endpoints = [];
@@ -184,13 +199,15 @@ class GameMaker {
 
 		foreach ($reflectedClass->getMethods(\ReflectionMethod::IS_PUBLIC) as $reflectionMethod) {
 			$endpoint = new Endpoint();
+			$endpoint->method = $reflectionMethod->getName();
 			if ($this->annotationReader->getMethodAnnotation($reflectionMethod, IgnoreEndpoint::class) === null) {
 				$httpMethod = $this->getFullHttpMethod($reflectionMethod, $apiAnnotation, $controllerAnnotation);
 
 				if ($httpMethod !== null) {
 					$endpoint->httpMethod = $httpMethod;
 					$endpoint->inputs = $this->getInputsForMethod($reflectionMethod, $httpMethod);
-                    $endpoint->outputs = $this->getOutputsForMethod($reflectionMethod, $httpMethod, $outputWrapperAnnotation, $parsedObjects);
+                    list($endpoint->outputs, $methodParsedObjects) = $this->getOutputsAndParsedObjectsForMethod($reflectionMethod, $httpMethod, array_merge($parsedObjects, $alreadyParsedObjects), $outputWrapperAnnotation);
+                    $parsedObjects = array_merge($parsedObjects, $methodParsedObjects);
 
 					foreach ( array_map("trim", explode("\n", preg_replace("/^(\s*)(\/*)(\**)(\/*)/m", "", $reflectionMethod->getDocComment()))) as $docblockLine ) {
 						if ( $docblockLine && substr($docblockLine, 0, 1) != "@" ) {
@@ -201,13 +218,12 @@ class GameMaker {
 						$endpoint->description = substr($endpoint->description, 0, strlen($endpoint->description) - 1);
 					}
 
-
 					$endpoints[] = $endpoint;
 				}
 			}
 		}
 
-		return new ControllerInformation($class, $endpoints, array_values($parsedObjects));
+		return new ControllerInformation($class, $endpoints, $parsedObjects);
 	}
 
 	/**
@@ -335,13 +351,16 @@ class GameMaker {
      *
      * @param \ReflectionMethod $method
      * @param HttpMethod $httpMethod
+     * @param ObjectInformation[] $alreadyParsedObjects
      * @param OutputWrapper $outputWrapperAnnotation
-     * @param ObjectInformation[] $parsedObjects
-     * @return Output[]
+     * @return array
      */
-    protected function getOutputsForMethod(\ReflectionMethod $method, HttpMethod $httpMethod, OutputWrapper $outputWrapperAnnotation = null, array &$parsedObjects = []) {
+    protected function getOutputsAndParsedObjectsForMethod(\ReflectionMethod $method, HttpMethod $httpMethod, array $alreadyParsedObjects, OutputWrapper $outputWrapperAnnotation = null) {
         /** @var Output[] $outputs */
         $outputs = [];
+
+        /** @var ObjectInformation[] $parsedObjects */
+        $parsedObjects = [];
 
         /** @var Output $outputForWrapper */
         $outputForWrapper = null;
@@ -405,9 +424,9 @@ class GameMaker {
         // Swap with defined output wrapper, if appropriate.
         if ( $outputForWrapper != null && $outputWrapperAnnotation != null && $this->annotationReader->getMethodAnnotation($method, IgnoreOutputWrapper::class) == null ) {
             // Create a unique name for this type of output wrapper for the specified type.
-            $outputWrapperUniqueNameForType = $outputWrapperAnnotation->class . "Of" . ucfirst($outputForWrapper->typeHint->types[0]->type) . ($outputForWrapper->typeHint->types[0]->genericType ? ucfirst($outputForWrapper->typeHint->types[0]->genericType) : "");
+            $outputWrapperUniqueNameForType = $outputWrapperAnnotation->class . "With" . ucfirst($outputForWrapper->typeHint->types[0]->type) . ($outputForWrapper->typeHint->types[0]->genericType ? ("Of" . ucfirst($outputForWrapper->typeHint->types[0]->genericType) . "s") : "");
 
-            if ( !array_key_exists($outputWrapperUniqueNameForType, $parsedObjects) ) {
+            if ( !array_key_exists($outputWrapperUniqueNameForType, $alreadyParsedObjects) ) {
                 $this->parseObject($outputWrapperAnnotation->class, $parsedObjects);
                 $outputWrapperParsedObject = $parsedObjects[$outputWrapperAnnotation->class];
                 $outputWrapperParsedObject->uniqueName = $outputWrapperUniqueNameForType;
@@ -419,12 +438,25 @@ class GameMaker {
                 }
 
                 $parsedObjects[$outputWrapperUniqueNameForType] = $outputWrapperParsedObject;
+                $alreadyParsedObjects[$outputWrapperUniqueNameForType] = $outputWrapperParsedObject;
                 unset($parsedObjects[$outputWrapperAnnotation->class]);
+            }
+
+            // And swap with the original output.
+            foreach ( $outputs as $key => $output ) {
+                if ( $output == $outputForWrapper ) {
+                    $wrappedOutputType = new Type();
+                    $wrappedOutputType->type = $outputWrapperUniqueNameForType;
+
+                    $outputs[$key]->typeHint = new OutputTypeHint([$wrappedOutputType], null, $output->typeHint->description);
+
+                    break;
+                }
             }
 
         }
 
-        return $outputs;
+        return [$outputs, $parsedObjects];
     }
 
     /**
@@ -436,13 +468,16 @@ class GameMaker {
      */
     protected function parseObject ( $class, array &$parsedObjects, $depth = 1 ) {
         if ( class_exists($class) && !array_key_exists($class, $parsedObjects)) {
-            $parsedObject = new ObjectInformation($class, []);
+            $parsedObject = new ObjectInformation($class, [], []);
             $reflectionClass = new \ReflectionClass($class);
 
             foreach ( $reflectionClass->getProperties(\ReflectionProperty::IS_PUBLIC) as $reflectedProperty ) {
                 foreach ($this->annotationReader->getPropertyAnnotations($reflectedProperty) as $propertyAnnotation) {
                     if ($propertyAnnotation instanceof TypeHint) {
                        $parsedObject->properties[] = $propertyAnnotation;
+                       if ( $reflectedProperty->getDeclaringClass() == $reflectionClass ) {
+                           $parsedObject->specificProperties[] = $propertyAnnotation;
+                       }
 
                        // Recurse into types that represent objects and ensure they're in the graph.
                         if ( $depth <= $this->maxRecursionDepth ) {
@@ -520,6 +555,15 @@ class GameMaker {
 						$input->in = $this->getDefaultLocationForHttpMethod($httpMethod);
 					}
 				}
+
+				if ( $input->arrayFormat == null ) {
+                    foreach ($input->typeHint->types as $type) {
+                        if ($type == TypeHint::ARRAY_TYPE) {
+                            $input->arrayFormat = $this->defaultArrayFormat;
+                            break;
+                        }
+                    }
+                }
 
 				$inputs[] = $input;
 			}
@@ -606,6 +650,14 @@ class GameMaker {
     public function setMaxRecursionDepth($maxRecursionDepth)
     {
         $this->maxRecursionDepth = $maxRecursionDepth;
+    }
+
+    /**
+     * @param string $defaultArrayFormat
+     */
+    public function setDefaultArrayFormat($defaultArrayFormat)
+    {
+        $this->defaultArrayFormat = $defaultArrayFormat;
     }
 
     protected function doesVariableExistInPath($variable, HttpMethod $httpMethod) {

@@ -15,8 +15,12 @@ use Doctrine\Common\Annotations\Annotation\Target;
  */
 class Input {
 
+    /**
+     * @var string
+     */
 	public $name;
 
+    /** @var string */
 	public $variableName;
 
 	/**
@@ -24,7 +28,14 @@ class Input {
 	 */
 	public $in;
 
+	/** @var array */
 	public $enum;
 
 	public $typeHint;
+
+    /**
+     * @var string
+     * @Enum({"CSV", "SSV", "TSV", "PIPES", "MULTI"})
+     */
+    public $arrayFormat;
 }
