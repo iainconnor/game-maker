@@ -19,6 +19,9 @@ abstract class Path {
 	 */
 	public $path;
 
+	/** @var string */
+	public $friendlyName = null;
+
 	/** @var bool */
 	public $ignoreParent = false;
 }

@@ -197,7 +197,7 @@ class Swagger2 extends Processor
 
                 $json[$relativePath][strtolower(GameMaker::getAfterLastSlash(get_class($endpoint->httpMethod)))] = [
                     'description' => $endpoint->description,
-                    'operationId' => $controller->class . "@" . $endpoint->method,
+                    'operationId' => $endpoint->httpMethod->friendlyName ? (str_replace(' ', '', ucwords($endpoint->httpMethod->friendlyName))) : ($controller->class . "@" . $endpoint->method),
                     'parameters' => $this->generateJsonForParameters($endpoint->inputs),
                     'responses' => $this->generateJsonForResponses($endpoint->outputs),
                     'tags' => $this->generateJsonForTags($endpoint->tags)

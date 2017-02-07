@@ -192,12 +192,14 @@ class GameMaker {
 		$tagAnnotation = $this->annotationReader->getClassAnnotation($reflectedClass, Tag::class);
 
 		foreach ($reflectedClass->getMethods(\ReflectionMethod::IS_PUBLIC) as $reflectionMethod) {
-			$endpoint = new Endpoint();
-			$endpoint->method = $reflectionMethod->getName();
+
 			if ($this->annotationReader->getMethodAnnotation($reflectionMethod, IgnoreEndpoint::class) === null) {
 				$httpMethod = $this->getFullHttpMethod($reflectionMethod, $apiAnnotation, $controllerAnnotation);
 
 				if ($httpMethod !== null) {
+                    $endpoint = new Endpoint();
+
+                    $endpoint->method = $reflectionMethod->getName();
 					$endpoint->httpMethod = $httpMethod;
 					$endpoint->inputs = $this->getInputsForMethod($reflectionMethod, $httpMethod);
                     $endpoint->outputs = $this->getOutputsForMethod($reflectionMethod, $httpMethod, $outputWrapperAnnotation, $parsedObjects);
