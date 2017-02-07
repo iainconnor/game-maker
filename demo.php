@@ -226,7 +226,9 @@ $gameMaker->setAnnotationReader(
         new \Doctrine\Common\Cache\ArrayCache()
     ));
 
+
 $controllers = $gameMaker->parseControllers([Foo::class, Baz::class]);
+
 
 $markdown = new \IainConnor\GameMaker\Processors\Markdown("Demo", "Just a demonstration.");
 echo ( $markdown->processControllers($controllers) );
