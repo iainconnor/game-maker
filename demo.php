@@ -230,9 +230,8 @@ $gameMaker->setAnnotationReader(
 $controllers = $gameMaker->parseControllers([Foo::class, Baz::class]);
 
 
-//$markdown = new \IainConnor\GameMaker\Processors\Markdown("Demo", "Just a demonstration.");
-//echo ( $markdown->processControllers($controllers) );
-
+$markdown = new \IainConnor\GameMaker\Processors\Markdown("Demo", "Just a demonstration.");
+echo ( $markdown->processControllers($controllers) );
 
 $swagger2 = new \IainConnor\GameMaker\Processors\Swagger2("Demo", "1.0", "Just a demonstration.");
 echo ( $swagger2->processControllers($controllers) );

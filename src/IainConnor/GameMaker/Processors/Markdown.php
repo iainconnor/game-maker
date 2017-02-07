@@ -113,7 +113,7 @@ class Markdown extends Processor
      * @return string
      */
     protected function generateMarkdownForObjects(array $objects) {
-        //$this->alphabetizeObjects($objects);
+        $this->alphabetizeObjects($objects);
 
         return join(PHP_EOL, array_map([$this, "generateMarkdownForObject"], $objects));
     }

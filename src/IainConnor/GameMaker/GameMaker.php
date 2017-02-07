@@ -158,15 +158,8 @@ class GameMaker {
      * @return ControllerInformation[]
      */
     public function parseControllers(array $classes) {
-        $controllers = [];
 
-        foreach ( $classes as $class ) {
-            $controllers[] = $this->parseController($class);
-        }
-
-        return $controllers;
-
-        //return array_map([$this, "parseController"], $classes);
+        return array_map([$this, "parseController"], $classes);
     }
 
     /**
@@ -422,17 +415,11 @@ class GameMaker {
 
             if ( !array_key_exists($outputWrapperUniqueNameForType, $parsedObjects) ) {
                 $this->parseObject($outputWrapperAnnotation->class, $parsedObjects);
-                $outputWrapperParsedObject = $parsedObjects[$outputWrapperAnnotation->class];
-                $outputWrapperParsedObject->uniqueName = $outputWrapperUniqueNameForType;
-                foreach ( $outputWrapperParsedObject->properties as $key=>$property ) {
-                    if ( $property->variableName == $outputWrapperAnnotation->property ) {
-                        $outputWrapperParsedObject->properties[$key]->types = $outputForWrapper->typeHint->types;
-                        break;
-                    }
-                }
 
-                //$parsedObjects[$outputWrapperUniqueNameForType] = $outputWrapperParsedObject;
-                //unset($parsedObjects[$outputWrapperAnnotation->class]);
+                $genericOutputWrapperParsedObject = $parsedObjects[$outputWrapperAnnotation->class];
+
+                $parsedObjects[$outputWrapperUniqueNameForType] = $this->cloneOutputWrapperAndSwapPropertyTypeHint($genericOutputWrapperParsedObject, $outputWrapperUniqueNameForType, $outputWrapperAnnotation->property, $outputForWrapper->typeHint);
+                unset($parsedObjects[$outputWrapperAnnotation->class]);
             }
 
             // And swap with the original output.
@@ -450,6 +437,39 @@ class GameMaker {
         }
 
         return $outputs;
+    }
+
+    /**
+     * Clones the specified generic version of an Outout Wrapper, swapping the type hint for the specified property with
+     * the specified value.
+     *
+     * @param ObjectInformation $genericOutputWrapper
+     * @param $uniqueName
+     * @param $propertyNameToSwap
+     * @param OutputTypeHint $typeHint
+     * @return ObjectInformation
+     */
+    protected function cloneOutputWrapperAndSwapPropertyTypeHint(ObjectInformation $genericOutputWrapper, $uniqueName, $propertyNameToSwap, OutputTypeHint $typeHint) {
+        $clonedOutputWrapper = new ObjectInformation($genericOutputWrapper->class, [], []);
+        $clonedOutputWrapper->uniqueName = $uniqueName;
+
+        foreach ( $genericOutputWrapper->properties as $key => $property ) {
+            $clonedOutputWrapper->properties[$key] = clone $property;
+
+            if ( $property->variableName == $propertyNameToSwap ) {
+                $clonedOutputWrapper->properties[$key]->types = $typeHint->types;
+            }
+        }
+
+        foreach ( $genericOutputWrapper->specificProperties as $key => $property ) {
+            $clonedOutputWrapper->specificProperties[$key] = clone $property;
+
+            if ( $property->variableName == $propertyNameToSwap ) {
+                $clonedOutputWrapper->properties[$key]->types = $typeHint->types;
+            }
+        }
+
+        return $clonedOutputWrapper;
     }
 
     /**
