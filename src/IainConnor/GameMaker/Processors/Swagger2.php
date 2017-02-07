@@ -270,7 +270,7 @@ class Swagger2 extends Processor
      * @return array
      */
     protected function generateJsonForDefinitions(array $objects) {
-        $this->alphabetizeObjects($objects);
+        //$this->alphabetizeObjects($objects);
 
         $json = [];
 
