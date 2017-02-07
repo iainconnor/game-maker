@@ -169,6 +169,8 @@ class GameMaker {
         }
 
         return $controllers;
+
+        //return array_map([$this, "parseController"], $classes);
     }
 
     /**

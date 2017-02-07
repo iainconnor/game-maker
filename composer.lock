@@ -288,12 +288,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/nikic/PHP-Parser.git",
-                "reference": "58e7881e987c55c957104687ecccf963d1607753"
+                "reference": "62877b5d14e4d2e4b213a9cdb25413b72bb6505a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/58e7881e987c55c957104687ecccf963d1607753",
-                "reference": "58e7881e987c55c957104687ecccf963d1607753",
+                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/62877b5d14e4d2e4b213a9cdb25413b72bb6505a",
+                "reference": "62877b5d14e4d2e4b213a9cdb25413b72bb6505a",
                 "shasum": ""
             },
             "require": {
@@ -331,7 +331,7 @@
                 "parser",
                 "php"
             ],
-            "time": "2017-01-29 21:35:40"
+            "time": "2017-02-05 16:47:56"
         },
         {
             "name": "symfony/finder",
