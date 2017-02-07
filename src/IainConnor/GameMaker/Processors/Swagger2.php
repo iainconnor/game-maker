@@ -25,11 +25,8 @@ class Swagger2 extends Processor
     /** @var string|null */
     public $description;
 
-    protected $swaggerTypes = [
-        'string',
-        'int',
-        'float',
-        'bool'
+    protected $swaggerTypeMap = [
+        'int' => 'integer'
     ];
 
     /**
@@ -52,6 +49,8 @@ class Swagger2 extends Processor
      */
     public function processControllers(array $controllers)
     {
+        $basePath = $this->extractBasePathFromControllers($controllers);
+
         $json = [
             'swagger' => '2.0',
             'info' => [
@@ -59,46 +58,163 @@ class Swagger2 extends Processor
                 'title' => $this->title,
                 'description' => $this->description . ($this->description ? " " . json_decode('"\u00B7"') . " " : "") . "Generated with " . json_decode('"\u2764"') . " by GameMaker " . json_decode('"\u00B7"') . " https://github.com/iainconnor/game-maker).",
             ],
+            'host' => $this->extractHostFromControllers($controllers),
+            'schemes' => $this->extractSchemesFromControllers($controllers),
             'consumes' => [
                 'application/json'
             ],
             'produces' => [
                 'application/json'
             ],
-            'paths' => $this->generateJsonForControllers($controllers),
+            'paths' => $this->generateJsonForControllers($controllers, $basePath),
             'definitions' => $this->generateJsonForDefinitions($this->getUniqueObjects($controllers))
         ];
+
+        if ( $basePath ) {
+            $json['basePath'] = $basePath;
+        }
 
         return json_encode($json, JSON_PRETTY_PRINT);
     }
 
     /**
      * @param ControllerInformation[] $controllers
+     * @return string
+     * @throws \Exception
+     */
+    protected function extractHostFromControllers(array $controllers) {
+        $host = null;
+
+        foreach ( $controllers as $controller ) {
+            foreach ( $controller->endpoints as $endpoint ) {
+                if ( $host == null ) {
+                    $host = parse_url($endpoint->httpMethod->path, PHP_URL_HOST);
+                }
+
+                if ( $host != parse_url($endpoint->httpMethod->path, PHP_URL_HOST) ) {
+                    throw new \Exception("Sorry, Swagger 2.0 requires all endpoints be on the same host.");
+                }
+            }
+        }
+
+        return $host;
+    }
+
+    /**
+     * @param ControllerInformation[] $controllers
+     * @return string
+     */
+    protected function extractBasePathFromControllers(array $controllers) {
+        $paths = [];
+
+        foreach ( $controllers as $controller ) {
+            foreach ( $controller->endpoints as $endpoint ) {
+                $path = parse_url($endpoint->httpMethod->path, PHP_URL_PATH);
+                if ( array_search($path, $paths) === false ) {
+                    $paths[] = $path;
+                }
+            }
+        }
+
+        return $this->getLongestCommonPrefix($paths);
+    }
+
+    /**
+     * @param array $strings
+     * @return string|null
+     */
+    protected function getLongestCommonPrefix(array $strings) {
+        $prefixLength = 0;
+        while ($prefixLength < strlen($strings[0])) {
+            $prefixChar = $strings[0][$prefixLength];
+
+            for ($i=1; $i < count($strings); $i++) {
+                if ($strings[$i][$prefixLength] !== $prefixChar) {
+                    break(2);
+                }
+            }
+
+            $prefixLength++;
+        }
+
+        $longestPrefix = substr($strings[0], 0, $prefixLength);
+
+        if ( !$longestPrefix || $longestPrefix == "/" ) {
+
+            return null;
+        }
+
+        return $longestPrefix;
+    }
+
+    /**
+     * @param array $controllers
      * @return array
      */
-    protected function generateJsonForControllers(array $controllers) {
+    protected function extractSchemesFromControllers(array $controllers) {
+        $schemes = [];
+
+        foreach ( $controllers as $controller ) {
+            foreach ( $controller->endpoints as $endpoint ) {
+                $scheme = parse_url($endpoint->httpMethod->path, PHP_URL_SCHEME);
+                if ( array_search($scheme, $schemes) === false ) {
+                    $schemes[] = $scheme;
+                }
+            }
+        }
+
+        return $schemes;
+    }
+
+    /**
+     * @param ControllerInformation[] $controllers
+     * @param string|null $basePath
+     * @return array
+     */
+    protected function generateJsonForControllers(array $controllers, $basePath = null) {
+        $json = [];
+
         $this->alphabetizeControllers($controllers);
 
-        return array_merge(array_map([$this, "generateJsonForController"], $controllers));
+        foreach ($controllers as $controller) {
+            $json = array_merge($json, $this->generateJsonForController($controller, $basePath));
+        }
+
+        return $json;
     }
 
     /**
      * @param ControllerInformation $controller
+     * @param string|null $basePath
      * @return array
      */
-    protected function generateJsonForController(ControllerInformation $controller) {
+    protected function generateJsonForController(ControllerInformation $controller, $basePath = null) {
         $json = [];
 
         foreach ( $controller->endpoints as $endpoint ) {
-            $json[$endpoint->httpMethod->path][strtolower(GameMaker::getAfterLastSlash(get_class($endpoint->httpMethod)))] = [
-                'description' => $endpoint->description,
-                'operationId' => $controller->class . "@" . $endpoint->method,
-                'parameters' => $this->generateJsonForParameters($endpoint->inputs),
-                'responses' => $this->generateJsonForResponses($endpoint->outputs)
-            ];
+            if ( count($endpoint->outputs) ) {
+                $relativePath = substr(parse_url($endpoint->httpMethod->path, PHP_URL_PATH), $basePath ? strlen($basePath) : 0);
+
+                $json[$relativePath][strtolower(GameMaker::getAfterLastSlash(get_class($endpoint->httpMethod)))] = [
+                    'description' => $endpoint->description,
+                    'operationId' => $controller->class . "@" . $endpoint->method,
+                    'parameters' => $this->generateJsonForParameters($endpoint->inputs),
+                    'responses' => $this->generateJsonForResponses($endpoint->outputs),
+                    'tags' => $this->generateJsonForTags($endpoint->tags)
+                ];
+            }
         }
 
         return $json;
+    }
+
+    /**
+     * @param string[] $tags
+     * @return array|\string[]
+     */
+    protected function generateJsonForTags(array $tags) {
+
+        return $tags;
     }
 
     /**
@@ -117,28 +233,33 @@ class Swagger2 extends Processor
                 throw new \Exception("Sorry, as of Swagger 2.0, you can only have one response per HTTP status code. See https://github.com/OAI/OpenAPI-Specification/issues/270.");
             }
 
-
-
             $type = $typeHint->types[0];
             $schema = [];
-            if ( $this->typeIsSimple($type->type) ) {
-                $schema['type'] = $this->getSwaggerType($type->type);
-            } else {
-                $schema['$ref'] = $this->getSwaggerType($type->type);
-            }
-
-            if ( $type->type == TypeHint::ARRAY_TYPE ) {
-                if ( $this->typeIsSimple($type->type) ) {
-                    $schema['items']['type'] = $this->getSwaggerType($type->genericType);
+            if ( !$this->typeIsNull($type->type) ) {
+                if ($this->typeIsSimple($type->type)) {
+                    $schema['type'] = $this->getSwaggerType($type->type);
                 } else {
-                    $schema['items']['$ref'] = $this->getSwaggerType($type->genericType);
+                    $schema['$ref'] = $this->getSwaggerType($type->type);
+                }
+
+                if ($type->type == TypeHint::ARRAY_TYPE) {
+                    if ( !$this->typeIsNull($type->genericType) ) {
+                        if ($this->typeIsSimple($type->type)) {
+                            $schema['items']['type'] = $this->getSwaggerType($type->genericType);
+                        } else {
+                            $schema['items']['$ref'] = $this->getSwaggerType($type->genericType);
+                        }
+                    }
                 }
             }
 
-            $json[$output->statusCode] = [
-                'description' => $typeHint->description,
-                'schema' => $schema
-            ];
+            if ( $typeHint->description ) {
+                $json[$output->statusCode]['description'] = $typeHint->description;
+            }
+
+            if ( !empty($schema) ) {
+                $json[$output->statusCode]['schema'] = $schema;
+            }
         }
 
         return $json;
@@ -160,7 +281,7 @@ class Swagger2 extends Processor
                 'name' => $input->name,
                 'in' => strtolower($input->in),
                 'description' => $typeHint->description,
-                'required' => !$this->doesNullTypeExist($typeHint->types)
+                'required' => is_null($typeHint->defaultValue) && !$this->doesNullTypeExist($typeHint->types)
             ];
 
             foreach ( $typeHint->types as $type ) {
@@ -254,6 +375,10 @@ class Swagger2 extends Processor
     protected function getSwaggerType($type) {
         if ( !$this->typeIsNull($type) ) {
             if ( $this->typeIsSimple($type) ) {
+                if (array_key_exists($type, $this->swaggerTypeMap)) {
+
+                    return $this->swaggerTypeMap[$type];
+                }
 
                 return $type;
             } else {
@@ -301,26 +426,30 @@ class Swagger2 extends Processor
         $properties = [];
 
         foreach ( $propertiesList as $property ) {
-            if ( !$this->doesNullTypeExist($property->types) ) {
+            if ( is_null($property->defaultValue) && !$this->doesNullTypeExist($property->types) ) {
                 $requiredProperties[] = $property->variableName;
             }
 
             $propertySchema = [];
             foreach ( $property->types as $type ) {
-                if ( $this->typeIsSimple($type->type) ) {
-                    $propertySchema['type'][] = $this->getSwaggerType($type->type);
-                } else {
-                    if ( isset($propertySchema['$ref']) ) {
-                        throw new \Exception("Sorry, as of Swagger 2.0, you can only have one type of object parameter. See https://github.com/OAI/OpenAPI-Specification/issues/458.");
-                    }
-                    $propertySchema['$ref'] = $this->getSwaggerType($type->type);
-                }
-
-                if ( $type->type == TypeHint::ARRAY_TYPE ) {
-                    if ($this->typeIsSimple($type->genericType)) {
-                        $propertySchema['items']['type'] = $this->getSwaggerType($type->genericType);
+                if ( !$this->typeIsNull($type->type) ) {
+                    if ($this->typeIsSimple($type->type)) {
+                        $propertySchema['type'][] = $this->getSwaggerType($type->type);
                     } else {
-                        $propertySchema['items']['$ref'] = $this->getSwaggerType($type->genericType);
+                        if (isset($propertySchema['$ref'])) {
+                            throw new \Exception("Sorry, as of Swagger 2.0, you can only have one type of object parameter. See https://github.com/OAI/OpenAPI-Specification/issues/458.");
+                        }
+                        $propertySchema['$ref'] = $this->getSwaggerType($type->type);
+                    }
+
+                    if ($type->type == TypeHint::ARRAY_TYPE) {
+                        if ( !$this->typeIsNull($type->genericType) ) {
+                            if ($this->typeIsSimple($type->genericType)) {
+                                $propertySchema['items']['type'] = $this->getSwaggerType($type->genericType);
+                            } else {
+                                $propertySchema['items']['$ref'] = $this->getSwaggerType($type->genericType);
+                            }
+                        }
                     }
                 }
             }

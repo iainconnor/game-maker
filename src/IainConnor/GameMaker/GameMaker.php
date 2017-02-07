@@ -27,6 +27,7 @@ use IainConnor\GameMaker\Annotations\OutputWrapper;
 use IainConnor\GameMaker\Annotations\PATCH;
 use IainConnor\GameMaker\Annotations\POST;
 use IainConnor\GameMaker\Annotations\PUT;
+use IainConnor\GameMaker\Annotations\Tag;
 use IainConnor\GameMaker\NamingConventions\CamelToSnake;
 use IainConnor\GameMaker\NamingConventions\NamingConvention;
 use IainConnor\GameMaker\Utils\HttpStatusCodes;
@@ -187,6 +188,9 @@ class GameMaker {
 		/** @var OutputWrapper|null $outputWrapperAnnotation */
 		$outputWrapperAnnotation = $this->annotationReader->getClassAnnotation($reflectedClass, OutputWrapper::class);
 
+		/** @var Tag|null $tagAnnotation */
+		$tagAnnotation = $this->annotationReader->getClassAnnotation($reflectedClass, Tag::class);
+
 		foreach ($reflectedClass->getMethods(\ReflectionMethod::IS_PUBLIC) as $reflectionMethod) {
 			$endpoint = new Endpoint();
 			$endpoint->method = $reflectionMethod->getName();
@@ -197,6 +201,7 @@ class GameMaker {
 					$endpoint->httpMethod = $httpMethod;
 					$endpoint->inputs = $this->getInputsForMethod($reflectionMethod, $httpMethod);
                     $endpoint->outputs = $this->getOutputsForMethod($reflectionMethod, $httpMethod, $outputWrapperAnnotation, $parsedObjects);
+                    $endpoint->tags = $this->getTagsForMethod($reflectionMethod, $tagAnnotation);
 
 					foreach ( array_map("trim", explode("\n", preg_replace("/^(\s*)(\/*)(\**)(\/*)/m", "", $reflectionMethod->getDocComment()))) as $docblockLine ) {
 						if ( $docblockLine && substr($docblockLine, 0, 1) != "@" ) {
@@ -334,6 +339,28 @@ class GameMaker {
     protected function escapeInputInMethodName($input, $methodName) {
 
         return trim(preg_replace("/(?<!{)(" . preg_quote(ucfirst($input), '/') . ")(?!})/", '/{$1}/', $methodName), '/');
+    }
+
+    /**
+     * @param \ReflectionMethod $method
+     * @param Tag|null $controllerLevelTag
+     * @return string[]
+     */
+    protected function getTagsForMethod(\ReflectionMethod $method, Tag $controllerLevelTag = null) {
+        $tags = [];
+
+        /** @var Tag $methodLevelTag */
+        $methodLevelTag = $this->annotationReader->getMethodAnnotation($method, Tag::class);
+
+        if ( $controllerLevelTag != null && ($methodLevelTag == null || !$methodLevelTag->ignoreParent) ) {
+            $tags += $controllerLevelTag->tags;
+        }
+
+        if ( $methodLevelTag ) {
+            $tags += $methodLevelTag->tags;
+        }
+
+        return $tags;
     }
 
     /**

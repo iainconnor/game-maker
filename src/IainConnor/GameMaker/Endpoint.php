@@ -26,4 +26,7 @@ class Endpoint {
      * @var string
      */
 	public $method;
+
+	/** @var string[] */
+	public $tags;
 }

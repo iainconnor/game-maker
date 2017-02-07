@@ -76,6 +76,14 @@ class Markdown extends Processor
             $markdown .= PHP_EOL . "#### `" . GameMaker::getAfterLastSlash(get_class($endpoint->httpMethod)) . "` [" . $endpoint->httpMethod->path . "](<" . $endpoint->httpMethod->path . ">)" . PHP_EOL;
             $markdown .= str_replace("\n", "  " . PHP_EOL, $endpoint->description) . PHP_EOL;
 
+            if ( count($endpoint->tags) ) {
+                $markdown .= PHP_EOL . "##### Tags" . PHP_EOL . PHP_EOL;
+
+                foreach ( $endpoint->tags as $tag ) {
+                    $markdown .= "* " . $tag . PHP_EOL;
+                }
+            }
+
             if ( count($endpoint->inputs) ) {
                 $markdown .= PHP_EOL . "##### Inputs" . PHP_EOL . PHP_EOL;
 

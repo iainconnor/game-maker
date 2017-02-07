@@ -95,6 +95,9 @@ class Foo {
 
 	/**
 	 * This works for guessed methods as well.
+     *
+     * You can tag methods with useful information.
+     * @\IainConnor\GameMaker\Annotations\Tag(tags={"Foo", "Bar"})
 	 *
 	 * @param string $foo A string.
 	 */
@@ -167,6 +170,10 @@ class Foo {
  * As before, just define the wrapper class and the property to override by default.
  * @\IainConnor\GameMaker\Annotations\OutputWrapper(class="Bar", property="data")
  *
+ *
+ * You can also Tag entire Controllers.
+ * @\IainConnor\GameMaker\Annotations\Tag(tags={"Foo", "Bar"})
+ *
  * @\IainConnor\GameMaker\Annotations\API(path=MY_DOMAIN)
  * @\IainConnor\GameMaker\Annotations\Controller(path="/baz")
  */
@@ -174,6 +181,10 @@ class Baz {
 
     /**
      * If there's only one return type, it will be used for the OutputWrapper by default.
+     *
+     * You can override the Controller-level Tag.
+     * @\IainConnor\GameMaker\Annotations\Tag(tags={"Baz"}, ignoreParent=true)
+     *
      * @return int[] The data node for the wrapper.
      */
     public function putEuismod() {
