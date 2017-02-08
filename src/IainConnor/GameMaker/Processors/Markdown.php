@@ -48,7 +48,7 @@ class Markdown extends Processor
         $markdown .= PHP_EOL;
 
         $markdown .= "## Entities." . PHP_EOL . PHP_EOL;
-        $markdown .= $this->generateMarkdownForObjects($this->getUniqueObjects($controllers));
+        $markdown .= $this->generateMarkdownForObjects(GameMaker::getUniqueObjectInControllers($controllers));
         $markdown .= PHP_EOL;
 
         $markdown .= "Generated with " . json_decode('"\u2764"') . " by [GameMaker](https://github.com/iainconnor/game-maker)." . PHP_EOL;

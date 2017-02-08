@@ -66,9 +66,14 @@ class GameMaker {
 	protected $defaultArrayFormat = "CSV";
 
     /**
+     * @var ControllerInformation[]
+     */
+	protected $parsedControllers = [];
+
+    /**
      * @var Finder
      */
-    private $finder;
+    protected $finder;
 
     /**
      * GameMaker constructor.
@@ -220,7 +225,11 @@ class GameMaker {
 			}
 		}
 
-		return new ControllerInformation($class, $endpoints, array_values($parsedObjects));
+		$controller = new ControllerInformation($class, $endpoints, array_values($parsedObjects));
+
+		$this->parsedControllers[$class] = $controller;
+
+		return $controller;
 	}
 
 	/**
@@ -727,4 +736,31 @@ class GameMaker {
 
 		return static::getProjectRoot() . "/vendor";
 	}
+
+    /**
+     * @param ControllerInformation[] $controllers
+     * @return ObjectInformation[]
+     */
+    public static function getUniqueObjectInControllers(array $controllers) {
+        /** @var ObjectInformation[] $objects */
+        $objects = [];
+
+        foreach ( $controllers as $controller ) {
+            foreach ( $controller->parsedObjects as $object ) {
+                $objects[$object->uniqueName] = $object;
+            }
+        }
+
+        return array_values($objects);
+    }
+
+    /**
+     * Retrieves the unique set of objects in the currently parsed controllers.
+     *
+     * @return ObjectInformation[]
+     */
+    public function getUniqueObjects() {
+
+        return GameMaker::getUniqueObjectInControllers($this->parsedControllers);
+    }
 }

@@ -67,7 +67,7 @@ class Swagger2 extends Processor
                 'application/json'
             ],
             'paths' => $this->generateJsonForControllers($controllers, $basePath),
-            'definitions' => $this->generateJsonForDefinitions($this->getUniqueObjects($controllers))
+            'definitions' => $this->generateJsonForDefinitions(GameMaker::getUniqueObjectInControllers($controllers))
         ];
 
         if ( $basePath ) {
@@ -117,34 +117,6 @@ class Swagger2 extends Processor
         }
 
         return $this->getLongestCommonPrefix($paths);
-    }
-
-    /**
-     * @param array $strings
-     * @return string|null
-     */
-    protected function getLongestCommonPrefix(array $strings) {
-        $prefixLength = 0;
-        while ($prefixLength < strlen($strings[0])) {
-            $prefixChar = $strings[0][$prefixLength];
-
-            for ($i=1; $i < count($strings); $i++) {
-                if ($strings[$i][$prefixLength] !== $prefixChar) {
-                    break(2);
-                }
-            }
-
-            $prefixLength++;
-        }
-
-        $longestPrefix = substr($strings[0], 0, $prefixLength);
-
-        if ( !$longestPrefix || $longestPrefix == "/" ) {
-
-            return null;
-        }
-
-        return $longestPrefix;
     }
 
     /**
@@ -467,7 +439,7 @@ class Swagger2 extends Processor
                 'type' => 'object',
                 'allOf' => [
                     [
-                        '$ref' => $definedParentClass
+                        '$ref' => '#/definitions/' . $definedParentClass->uniqueName
                     ],
                     [
                         'required' => $requiredProperties,

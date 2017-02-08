@@ -127,6 +127,15 @@ class Foo {
     }
 
     /**
+     * Works for the Object graph.
+     *
+     * @return BizzExtended Just a demo Object.
+     */
+    public function getNullamExtended() {
+
+    }
+
+    /**
      * You can define multiple possible returns.
      *
      * And define the HTTP status code for each.
@@ -227,6 +236,11 @@ class Biz {
     public $userName;
 }
 
+class BizzExtended extends Biz {
+    /** @var string The password. */
+    public $password;
+}
+
 $gameMaker = \IainConnor\GameMaker\GameMaker::instance();
 
 // You should always set an AnnotationReader to improve performance.
@@ -244,5 +258,19 @@ $controllers = $gameMaker->parseControllers([Foo::class, Baz::class]);
 $markdown = new \IainConnor\GameMaker\Processors\Markdown("Demo", "Just a demonstration.");
 echo ( $markdown->processControllers($controllers) );
 
+echo PHP_EOL . "--------" . PHP_EOL;
+
 $swagger2 = new \IainConnor\GameMaker\Processors\Swagger2("Demo", "1.0", "Just a demonstration.");
 echo ( $swagger2->processControllers($controllers) );
+
+echo PHP_EOL . "--------" . PHP_EOL;
+
+$mySqlSchema = new \IainConnor\GameMaker\Processors\MySqlSchema();
+echo ( $mySqlSchema->processControllers($controllers) );
+
+echo PHP_EOL . "--------" . PHP_EOL;
+
+$jsonSchema = new \IainConnor\GameMaker\Processors\JsonSchema("Just a demonstration.");
+echo ( implode(PHP_EOL . PHP_EOL, $jsonSchema->processControllers($controllers)) );
+
+echo PHP_EOL . "--------" . PHP_EOL;
