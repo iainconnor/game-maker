@@ -763,4 +763,12 @@ class GameMaker {
 
         return GameMaker::getUniqueObjectInControllers($this->parsedControllers);
     }
+
+    /**
+     * @return ControllerInformation[]
+     */
+    public function getParsedControllers()
+    {
+        return $this->parsedControllers;
+    }
 }
