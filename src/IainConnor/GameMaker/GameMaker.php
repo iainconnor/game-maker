@@ -773,4 +773,26 @@ class GameMaker {
     {
         return $this->parsedControllers;
     }
+
+    /**
+     * Retrieves the actual class for the given type.
+     *
+     * @param $type
+     * @return string
+     */
+    public function getActualClassForType($type) {
+        if ( class_exists($type) ) {
+
+            return $type;
+        }
+
+        foreach ( $this->getUniqueObjects() as $object ) {
+            if ( $object->uniqueName == $type ) {
+
+                return $object->class;
+            }
+        }
+
+        return $type;
+    }
 }
