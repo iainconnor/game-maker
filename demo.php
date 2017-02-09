@@ -252,25 +252,32 @@ $gameMaker->setAnnotationReader(
     ));
 
 
+// Parse controllers into a usable format.
 $controllers = $gameMaker->parseControllers([Foo::class, Baz::class]);
 
 
+// And then output that parsed content as Markdown.
 $markdown = new \IainConnor\GameMaker\Processors\Markdown("Demo", "Just a demonstration.");
 echo ( $markdown->processControllers($controllers) );
 
 echo PHP_EOL . "--------" . PHP_EOL;
 
+// Or a Swagger spec.
 $swagger2 = new \IainConnor\GameMaker\Processors\Swagger2("Demo", "1.0", "Just a demonstration.");
 echo ( $swagger2->processControllers($controllers) );
 
 echo PHP_EOL . "--------" . PHP_EOL;
 
+// Or MySQL.
 $mySqlSchema = new \IainConnor\GameMaker\Processors\MySqlSchema();
 echo ( $mySqlSchema->processControllers($controllers) );
 
 echo PHP_EOL . "--------" . PHP_EOL;
 
+// Or JSONSchema.
 $jsonSchema = new \IainConnor\GameMaker\Processors\JsonSchema("Just a demonstration.");
 echo ( implode(PHP_EOL . PHP_EOL, $jsonSchema->processControllers($controllers)) );
 
 echo PHP_EOL . "--------" . PHP_EOL;
+
+// Or whatever you want!

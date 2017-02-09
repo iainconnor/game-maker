@@ -77,6 +77,7 @@ class GameMaker {
 
     /**
      * GameMaker constructor.
+     *
      * @param CachedReader $annotationReader
      * @param NamingConvention $functionToPathNamingConvention
      * @param NamingConvention $variableNameToInputNamingConvention
@@ -92,6 +93,7 @@ class GameMaker {
 
     /**
      * Retrieve or boot an instance.
+     *
      * @return GameMaker
      */
     public static function instance() {
