@@ -37,8 +37,8 @@ class ObjectInformation
      */
     public function __construct($class, array $properties, array $specificProperties)
     {
-        $this->class = ltrim('\\', $class);
-        $this->uniqueName = ltrim('\\', $class);
+        $this->class = ltrim($class, '\\');
+        $this->uniqueName = ltrim($class, '\\');
         $this->properties = $properties;
         $this->specificProperties = $specificProperties;
     }
