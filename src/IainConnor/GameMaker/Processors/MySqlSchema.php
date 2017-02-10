@@ -103,7 +103,7 @@ class MySqlSchema extends Processor {
             $mySql[] = "CREATE TABLE `" . $tableName . "` (" . PHP_EOL . join("," . PHP_EOL, $columns) . PHP_EOL . ");";
         }
 
-        return "# Generated with " . json_decode('"\u2764"') . " by GameMaker " . json_decode('"\u00B7"') . " https://github.com/iainconnor/game-maker)." . PHP_EOL . PHP_EOL . join(PHP_EOL . PHP_EOL, $mySql);
+        return "# Generated with " . json_decode('"\u2764"') . " by GameMaker " . json_decode('"\u00B7"') . " https://github.com/iainconnor/game-maker." . PHP_EOL . PHP_EOL . join(PHP_EOL . PHP_EOL, $mySql);
     }
 
     /**

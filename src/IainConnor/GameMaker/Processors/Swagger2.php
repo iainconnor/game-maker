@@ -56,7 +56,7 @@ class Swagger2 extends Processor
             'info' => [
                 'version' => (string)$this->version,
                 'title' => $this->title,
-                'description' => $this->description . ($this->description ? " " . json_decode('"\u00B7"') . " " : "") . "Generated with " . json_decode('"\u2764"') . " by GameMaker " . json_decode('"\u00B7"') . " https://github.com/iainconnor/game-maker).",
+                'description' => $this->description . ($this->description ? " " . json_decode('"\u00B7"') . " " : "") . "Generated with " . json_decode('"\u2764"') . " by GameMaker " . json_decode('"\u00B7"') . " https://github.com/iainconnor/game-maker.",
             ],
             'host' => $this->extractHostFromControllers($controllers),
             'schemes' => $this->extractSchemesFromControllers($controllers),

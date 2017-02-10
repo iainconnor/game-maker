@@ -59,7 +59,7 @@ abstract class Processor
 
         if ( !$longestPrefix || $longestPrefix == "/" ) {
 
-            return null;
+            return "";
         }
 
         return $longestPrefix;
