@@ -16,7 +16,8 @@ abstract class Processor
     public abstract function processControllers(array $controllers);
 
     public function processController(ControllerInformation $controller) {
-        return array_shift($this->processControllers([$controller]));
+
+        return $this->processControllers([$controller]);
     }
 
     /**
@@ -47,7 +48,7 @@ abstract class Processor
             $prefixChar = $strings[0][$prefixLength];
 
             for ($i=1; $i < count($strings); $i++) {
-                if ($strings[$i][$prefixLength] !== $prefixChar) {
+                if (strlen($strings[$i]) - 1 < $prefixLength || $strings[$i][$prefixLength] !== $prefixChar) {
                     break(2);
                 }
             }
