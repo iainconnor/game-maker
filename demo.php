@@ -147,7 +147,7 @@ class Foo {
      * @return null Woah, no output.
      *
      * If you don't want to use the `@return` tag, you can also manually specify the type hint.
-     * @\IainConnor\GameMaker\Annotations\Output(statusCode=200, typeHint="int Just a demo int.")
+     * @\IainConnor\GameMaker\Annotations\Output(statusCode=200, typeHint="int[] Just a demo int.")
      */
     public function deleteLibero() {
 

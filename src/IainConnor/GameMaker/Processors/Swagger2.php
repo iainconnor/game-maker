@@ -25,7 +25,7 @@ class Swagger2 extends Processor
     /** @var string|null */
     public $description;
 
-    protected $swaggerTypeMap = [
+    public $swaggerTypeMap = [
         'int' => 'integer'
     ];
 
@@ -326,7 +326,7 @@ class Swagger2 extends Processor
      * @param string $type
      * @return bool
      */
-    protected function typeIsNull($type) {
+    public function typeIsNull($type) {
 
         return $type == null || strtoupper($type) == "NULL";
     }
@@ -335,7 +335,7 @@ class Swagger2 extends Processor
      * @param string $type
      * @return bool
      */
-    protected function typeIsSimple($type) {
+    public function typeIsSimple($type) {
 
         return $type == TypeHint::ARRAY_TYPE || array_search($type, TypeHint::$basicTypes) !== false;
     }
