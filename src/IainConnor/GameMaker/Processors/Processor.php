@@ -15,6 +15,11 @@ abstract class Processor
      */
     public abstract function processControllers(array $controllers);
 
+    public function processController(ControllerInformation $controller) {
+        
+        return array_shift($this->processControllers([$controller]));
+    }
+
     /**
      * @param ObjectInformation[] $objects
      */
