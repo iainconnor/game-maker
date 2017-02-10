@@ -26,7 +26,12 @@ class Swagger2 extends Processor
     public $description;
 
     public $swaggerTypeMap = [
-        'int' => 'integer'
+        'int' => 'integer',
+        'float' => 'number'
+    ];
+
+    public $swaggerInMap = [
+        'form' => 'formData'
     ];
 
     /**
@@ -51,6 +56,13 @@ class Swagger2 extends Processor
     {
         $basePath = $this->extractBasePathFromControllers($controllers);
 
+        $uniqueObjects = GameMaker::getUniqueObjectInControllers($controllers);
+        $uniqueNames = array_map(function($element) {
+            return $element->uniqueName;
+        }, $uniqueObjects);
+
+        $longestUniqueNamePrefix = $this->getLongestCommonPrefix($uniqueNames);
+
         $json = [
             'swagger' => '2.0',
             'info' => [
@@ -66,8 +78,8 @@ class Swagger2 extends Processor
             'produces' => [
                 'application/json'
             ],
-            'paths' => $this->generateJsonForControllers($controllers, $basePath),
-            'definitions' => $this->generateJsonForDefinitions(GameMaker::getUniqueObjectInControllers($controllers))
+            'paths' => $this->generateJsonForControllers($controllers, $longestUniqueNamePrefix, $basePath),
+            'definitions' => $this->generateJsonForDefinitions($uniqueObjects, $longestUniqueNamePrefix)
         ];
 
         if ( $basePath ) {
@@ -116,7 +128,7 @@ class Swagger2 extends Processor
             }
         }
 
-        return $this->getLongestCommonPrefix($paths);
+        return rtrim($this->getLongestCommonPrefix($paths), '/');
     }
 
     /**
@@ -140,16 +152,17 @@ class Swagger2 extends Processor
 
     /**
      * @param ControllerInformation[] $controllers
+     * @param $longestCommonNamePrefix
      * @param string|null $basePath
      * @return array
      */
-    protected function generateJsonForControllers(array $controllers, $basePath = null) {
+    protected function generateJsonForControllers(array $controllers, $longestCommonNamePrefix, $basePath = null) {
         $json = [];
 
         $this->alphabetizeControllers($controllers);
 
         foreach ($controllers as $controller) {
-            $json = array_merge($json, $this->generateJsonForController($controller, $basePath));
+            $json = array_merge($json, $this->generateJsonForController($controller, $longestCommonNamePrefix, $basePath));
         }
 
         return $json;
@@ -157,10 +170,11 @@ class Swagger2 extends Processor
 
     /**
      * @param ControllerInformation $controller
+     * @param $longestCommonNamePrefix
      * @param string|null $basePath
      * @return array
      */
-    protected function generateJsonForController(ControllerInformation $controller, $basePath = null) {
+    protected function generateJsonForController(ControllerInformation $controller, $longestCommonNamePrefix, $basePath = null) {
         $json = [];
 
         foreach ( $controller->endpoints as $endpoint ) {
@@ -170,8 +184,8 @@ class Swagger2 extends Processor
                 $json[$relativePath][strtolower(GameMaker::getAfterLastSlash(get_class($endpoint->httpMethod)))] = [
                     'description' => $endpoint->description,
                     'operationId' => $endpoint->httpMethod->friendlyName ? (str_replace(' ', '', ucwords($endpoint->httpMethod->friendlyName))) : ($controller->class . "@" . $endpoint->method),
-                    'parameters' => $this->generateJsonForParameters($endpoint->inputs),
-                    'responses' => $this->generateJsonForResponses($endpoint->outputs),
+                    'parameters' => $this->generateJsonForParameters($endpoint->inputs, $longestCommonNamePrefix),
+                    'responses' => $this->generateJsonForResponses($endpoint->outputs, $longestCommonNamePrefix),
                     'tags' => $this->generateJsonForTags($endpoint->tags)
                 ];
             }
@@ -191,10 +205,11 @@ class Swagger2 extends Processor
 
     /**
      * @param Output[] $outputs
+     * @param $longestCommonNamePrefix
      * @return array
      * @throws \Exception
      */
-    protected function generateJsonForResponses(array $outputs) {
+    protected function generateJsonForResponses(array $outputs, $longestCommonNamePrefix) {
         $json = [];
 
         foreach ( $outputs as $output ) {
@@ -209,17 +224,17 @@ class Swagger2 extends Processor
             $schema = [];
             if ( !$this->typeIsNull($type->type) ) {
                 if ($this->typeIsSimple($type->type)) {
-                    $schema['type'] = $this->getSwaggerType($type->type);
+                    $schema['type'] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
                 } else {
-                    $schema['$ref'] = $this->getSwaggerType($type->type);
+                    $schema['$ref'] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
                 }
 
                 if ($type->type == TypeHint::ARRAY_TYPE) {
                     if ( !$this->typeIsNull($type->genericType) ) {
                         if ($this->typeIsSimple($type->type)) {
-                            $schema['items']['type'] = $this->getSwaggerType($type->genericType);
+                            $schema['items']['type'] = $this->getSwaggerType($type->genericType, $longestCommonNamePrefix);
                         } else {
-                            $schema['items']['$ref'] = $this->getSwaggerType($type->genericType);
+                            $schema['items']['$ref'] = $this->getSwaggerType($type->genericType, $longestCommonNamePrefix);
                         }
                     }
                 }
@@ -239,10 +254,11 @@ class Swagger2 extends Processor
 
     /**
      * @param Input[] $inputs
+     * @param $longestCommonNamePrefix
      * @return array
      * @throws \Exception
      */
-    protected function generateJsonForParameters(array $inputs) {
+    protected function generateJsonForParameters(array $inputs, $longestCommonNamePrefix) {
         $json = [];
 
         foreach ($inputs as $input) {
@@ -251,19 +267,21 @@ class Swagger2 extends Processor
 
             $parameter = [
                 'name' => $input->name,
-                'in' => strtolower($input->in),
+                'in' => array_key_exists(strtolower($input->in), $this->swaggerInMap) ? $this->swaggerInMap[strtolower($input->in)] : strtolower($input->in),
                 'description' => $typeHint->description,
                 'required' => is_null($typeHint->defaultValue) && !$this->doesNullTypeExist($typeHint->types)
             ];
 
             foreach ( $typeHint->types as $type ) {
-                if ( $this->typeIsSimple($type->type) ) {
-                    $parameter['type'][] = $this->getSwaggerType($type->type);
-                } else {
-                    if ( isset($parameter['schema']['$ref']) ) {
-                        throw new \Exception("Sorry, as of Swagger 2.0, you can only have one type of object parameter. See https://github.com/OAI/OpenAPI-Specification/issues/458.");
+                if ( !$this->typeIsNull($type->type) ) {
+                    if ($this->typeIsSimple($type->type)) {
+                        $parameter['type'][] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
+                    } else {
+                        if (isset($parameter['schema']['$ref'])) {
+                            throw new \Exception("Sorry, as of Swagger 2.0, you can only have one type of object parameter. See https://github.com/OAI/OpenAPI-Specification/issues/458.");
+                        }
+                        $parameter['schema']['$ref'] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
                     }
-                    $parameter['schema']['$ref'] = $this->getSwaggerType($type->type);
                 }
             }
 
@@ -278,9 +296,9 @@ class Swagger2 extends Processor
             $arrayType = $this->getArrayType($typeHint->types);
             if ( $arrayType ) {
                 if ($this->typeIsSimple($arrayType->genericType)) {
-                    $parameter['items']['type'] = $this->getSwaggerType($arrayType->genericType);
+                    $parameter['items']['type'] = $this->getSwaggerType($arrayType->genericType, $longestCommonNamePrefix);
                 } else {
-                    $parameter['items']['$ref'] = $this->getSwaggerType($arrayType->genericType);
+                    $parameter['items']['$ref'] = $this->getSwaggerType($arrayType->genericType, $longestCommonNamePrefix);
                 }
 
                 $parameter['collectionFormat'] = strtolower($input->arrayFormat);
@@ -342,9 +360,10 @@ class Swagger2 extends Processor
 
     /**
      * @param string $type
-     * @return array|string|null
+     * @param $longestCommonNamePrefix
+     * @return array|null|string
      */
-    protected function getSwaggerType($type) {
+    protected function getSwaggerType($type, $longestCommonNamePrefix) {
         if ( !$this->typeIsNull($type) ) {
             if ( $this->typeIsSimple($type) ) {
                 if (array_key_exists($type, $this->swaggerTypeMap)) {
@@ -355,7 +374,7 @@ class Swagger2 extends Processor
                 return $type;
             } else {
 
-                return "#/definitions/" . GameMaker::getAfterLastSlash($type);
+                return "#/definitions/" . substr($type, strlen($longestCommonNamePrefix));
             }
         }
 
@@ -364,15 +383,16 @@ class Swagger2 extends Processor
 
     /**
      * @param ObjectInformation[] $objects
+     * @param $longestCommonNamePrefix
      * @return array
      */
-    protected function generateJsonForDefinitions(array $objects) {
+    protected function generateJsonForDefinitions(array $objects, $longestCommonNamePrefix) {
         $this->alphabetizeObjects($objects);
 
         $json = [];
 
         foreach ( $objects as $object ) {
-            $json[$object->uniqueName] = $this->generateJsonForDefinition($object, $objects);
+            $json[substr($object->uniqueName, strlen($longestCommonNamePrefix))] = $this->generateJsonForDefinition($object, $objects, $longestCommonNamePrefix);
         }
 
         return $json;
@@ -381,10 +401,11 @@ class Swagger2 extends Processor
     /**
      * @param ObjectInformation $object
      * @param ObjectInformation[] $allObjects
+     * @param $longestCommonNamePrefix
      * @return array
      * @throws \Exception
      */
-    protected function generateJsonForDefinition(ObjectInformation $object, array $allObjects) {
+    protected function generateJsonForDefinition(ObjectInformation $object, array $allObjects, $longestCommonNamePrefix) {
         $definedParentClass = $this->getParentClass($object->class, $allObjects);
 
         // If there's a defined parent, we only want the properties unique to this child.
@@ -406,20 +427,20 @@ class Swagger2 extends Processor
             foreach ( $property->types as $type ) {
                 if ( !$this->typeIsNull($type->type) ) {
                     if ($this->typeIsSimple($type->type)) {
-                        $propertySchema['type'][] = $this->getSwaggerType($type->type);
+                        $propertySchema['type'][] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
                     } else {
                         if (isset($propertySchema['$ref'])) {
                             throw new \Exception("Sorry, as of Swagger 2.0, you can only have one type of object parameter. See https://github.com/OAI/OpenAPI-Specification/issues/458.");
                         }
-                        $propertySchema['$ref'] = $this->getSwaggerType($type->type);
+                        $propertySchema['$ref'] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
                     }
 
                     if ($type->type == TypeHint::ARRAY_TYPE) {
                         if ( !$this->typeIsNull($type->genericType) ) {
                             if ($this->typeIsSimple($type->genericType)) {
-                                $propertySchema['items']['type'] = $this->getSwaggerType($type->genericType);
+                                $propertySchema['items']['type'] = $this->getSwaggerType($type->genericType, $longestCommonNamePrefix);
                             } else {
-                                $propertySchema['items']['$ref'] = $this->getSwaggerType($type->genericType);
+                                $propertySchema['items']['$ref'] = $this->getSwaggerType($type->genericType, $longestCommonNamePrefix);
                             }
                         }
                     }
@@ -434,26 +455,34 @@ class Swagger2 extends Processor
         }
 
         if ( $definedParentClass ) {
+            $definedParentClassProperties = [
+                'properties' => $properties
+            ];
+
+            if ( count($requiredProperties) ) {
+                $definedParentClassProperties['required'] = $requiredProperties;
+            }
 
             return [
                 'type' => 'object',
                 'allOf' => [
                     [
-                        '$ref' => '#/definitions/' . $definedParentClass->uniqueName
+                        '$ref' => '#/definitions/' . substr($definedParentClass->uniqueName, strlen($longestCommonNamePrefix))
                     ],
-                    [
-                        'required' => $requiredProperties,
-                        'properties' => $properties
-                    ]
+                    $definedParentClassProperties
                 ]
             ];
         } else {
-
-            return [
+            $typeJson = [
                 'type' => 'object',
-                'required' => $requiredProperties,
                 'properties' => $properties
             ];
+
+            if ( count($requiredProperties) ) {
+                $typeJson['required'] = $requiredProperties;
+            }
+
+            return $typeJson;
         }
     }
 

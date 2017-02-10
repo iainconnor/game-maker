@@ -11,7 +11,7 @@ use IainConnor\GameMaker\ObjectInformation;
 class MySqlSchema extends Processor {
 
     protected $typeMap = [
-        'string' => 'varchar',
+        'string' => 'varchar(255)',
         'int' => 'int',
         'float' => 'double',
         'bool' => 'int(1)'
@@ -35,7 +35,7 @@ class MySqlSchema extends Processor {
         $longestUniqueNamePrefix = $this->getLongestCommonPrefix($uniqueNames);
 
         foreach ( $uniqueTopLevelObjects as $object ) {
-            $tableName = $this->camelToSnake(substr($object->uniqueName, strlen($longestUniqueNamePrefix) - 1));
+            $tableName = $this->camelToSnake(substr($object->uniqueName, strlen($longestUniqueNamePrefix)));
             $columns = [];
             foreach ( $object->properties as $property ) {
                 $sqlType = null;
@@ -44,13 +44,13 @@ class MySqlSchema extends Processor {
                     if ( $type->type != null ) {
                         if ( $type->type == TypeHint::ARRAY_TYPE ) {
                             $sqlType = 'int';
-                            $joinTableName = $this->camelToSnake(substr($object->uniqueName, strlen($longestUniqueNamePrefix) - 1)) . "_" . $this->camelToSnake($property->variableName);
+                            $joinTableName = $this->camelToSnake(substr($object->uniqueName, strlen($longestUniqueNamePrefix))) . "_" . $this->camelToSnake($property->variableName);
 
                             $otherTableName = null;
                             $otherTableType = null;
                             if ($type->genericType && class_exists($type->genericType)) {
-                                if (substr($type->genericType, 0, strlen($longestUniqueNamePrefix) - 1) == $longestUniqueNamePrefix) {
-                                    $otherTableName = $this->camelToSnake($type->genericType, strlen($longestUniqueNamePrefix) - 1);
+                                if (substr($type->genericType, 0, strlen($longestUniqueNamePrefix)) == $longestUniqueNamePrefix) {
+                                    $otherTableName = $this->camelToSnake(substr($type->genericType, strlen($longestUniqueNamePrefix)));
                                 } else {
                                     $otherTableName = $this->camelToSnake($type->genericType);
                                 }
@@ -61,7 +61,7 @@ class MySqlSchema extends Processor {
                             }
 
                             if ($otherTableType) {
-                                $mySql[] = "CREATE TABLE `" . $joinTableName . "` (" . PHP_EOL . "\t'" . $tableName . "_id' int NOT NULL COMMENT 'references `" . $tableName . "`.`id`'" . "," . PHP_EOL . "\t'" . ($otherTableName ? $otherTableName . "_id" : $this->camelToSnake($property->variableName)) . "' " . $otherTableType . ($otherTableName ? " COMMENT 'references `" . $otherTableName . "`.`id`'" : "") . PHP_EOL . ");";
+                                $mySql[] = "CREATE TABLE `" . $joinTableName . "` (" . PHP_EOL . "\t`" . $tableName . "_id` int NOT NULL COMMENT 'references `" . $tableName . "`.`id`'" . "," . PHP_EOL . "\t`" . ($otherTableName ? $otherTableName . "_id" : $this->camelToSnake($property->variableName)) . "` " . $otherTableType . ($otherTableName ? " COMMENT 'references `" . $otherTableName . "`.`id`'" : "") . PHP_EOL . ");";
                             }
 
                             $property->description = "references `" . $joinTableName . "`.`" . $tableName . "_id`" . ($property->description ? " " : "") . $property->description;
@@ -69,7 +69,7 @@ class MySqlSchema extends Processor {
                             $sqlType = $this->typeMap[$type->type];
                         } else {
                             $sqlType = 'int';
-                            $property->description = "references `" . $this->camelToSnake(substr($object->uniqueName, strlen($longestUniqueNamePrefix) - 1)) . "`.`id`" . ($property->description ? " " : "") . $property->description;
+                            $property->description = "references `" . $this->camelToSnake(substr($type->type, strlen($longestUniqueNamePrefix))) . "`.`id`" . ($property->description ? " " : "") . $property->description;
                         }
 
                         break;
@@ -79,6 +79,7 @@ class MySqlSchema extends Processor {
                 if ( $sqlType != null ) {
                     $defaultValue = null;
                     $isNullable = false;
+
                     foreach ( $property->types as $type ) {
                         if ( $type->type == null ) {
                             $defaultValue = "NULL";
@@ -86,6 +87,7 @@ class MySqlSchema extends Processor {
                             break;
                         }
                     }
+
                     if ( $property->defaultValue ) {
                         if ( $sqlType == 'varchar' ) {
                             $defaultValue = "\"" . $property->defaultValue . "\"";
@@ -94,7 +96,7 @@ class MySqlSchema extends Processor {
                         }
                     }
 
-                    $column = "\t'" . $property->variableName . "' " . $sqlType . ($property->defaultValue ? " default " . $defaultValue : "") . ($isNullable ? "" : " NOT NULL") . ($property->description ? " COMMENT '" . addslashes($property->description) . "'" : "");
+                    $column = "\t`" . $this->camelToSnake($property->variableName) . "` " . $sqlType . ($property->defaultValue ? " default " . $defaultValue : "") . ($isNullable ? "" : " NOT NULL") . ($property->description ? " COMMENT '" . addslashes($property->description) . "'" : "");
 
                     $columns[] = $column;
                 }
@@ -126,6 +128,15 @@ class MySqlSchema extends Processor {
         }
 
         return $topLevelObjects;
+    }
+
+    /**
+     * @param string $string
+     * @return string
+     */
+    protected function camelToSnake($string)
+    {
+        return parent::camelToSnake(str_replace('\\', '', $string));
     }
 
 }
