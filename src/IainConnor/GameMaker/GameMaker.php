@@ -109,7 +109,7 @@ class GameMaker {
 	 */
 	protected static function boot() {
 
-        AnnotationRegistry::registerAutoloadNamespace('\IainConnor\GameMaker\Annotations', static::getSrcRoot());
+        AnnotationRegistry::registerAutoloadNamespace('IainConnor\GameMaker\Annotations', static::getSrcRoot());
 
 	    return new GameMaker(
             new CachedReader(
