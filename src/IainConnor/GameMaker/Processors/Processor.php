@@ -16,8 +16,7 @@ abstract class Processor
     public abstract function processControllers(array $controllers);
 
     public function processController(ControllerInformation $controller) {
-
-        return $this->processControllers([$controller]);
+        return array_shift($this->processControllers([$controller]));
     }
 
     /**
@@ -71,6 +70,7 @@ abstract class Processor
      * @return string
      */
     protected function camelToSnake($string) {
+
         return ltrim(strtolower(preg_replace('/[A-Z]([A-Z](?![a-z]))*/', '_$0', $string)), '_');
     }
 }
