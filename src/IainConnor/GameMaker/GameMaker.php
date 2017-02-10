@@ -451,6 +451,7 @@ class GameMaker {
         // Swap with defined output wrapper, if appropriate.
         if ( $outputForWrapper != null && $outputWrapperAnnotation != null && $this->annotationReader->getMethodAnnotation($method, IgnoreOutputWrapper::class) == null ) {
             // Create a unique name for this type of output wrapper for the specified type.
+            $outputWrapperAnnotation->class = ltrim($outputWrapperAnnotation->class, '\\');
             $outputWrapperUniqueNameForType = $outputWrapperAnnotation->class . "With" . ucfirst($outputForWrapper->typeHint->types[0]->type) . ($outputForWrapper->typeHint->types[0]->genericType ? ("Of" . ucfirst($outputForWrapper->typeHint->types[0]->genericType) . "s") : "");
 
             if ( !array_key_exists($outputWrapperUniqueNameForType, $parsedObjects) ) {
