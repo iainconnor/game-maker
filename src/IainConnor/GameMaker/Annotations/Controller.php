@@ -13,5 +13,6 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * @Annotation
  * @Target("CLASS")
  */
-class Controller extends Path {
+class Controller extends Path
+{
 }

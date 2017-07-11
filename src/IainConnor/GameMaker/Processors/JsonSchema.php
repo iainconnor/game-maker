@@ -32,10 +32,10 @@ class JsonSchema extends Processor
         $objects = [];
 
         // Add object definitions.
-        foreach ( $swaggerContents['definitions'] as $name => $definition ) {
+        foreach ($swaggerContents['definitions'] as $name => $definition) {
             $localDefinitions = [];
-            foreach ( $swaggerContents['definitions'] as $compareName => $compareDefinition ) {
-                if ( $name != $compareName ) {
+            foreach ($swaggerContents['definitions'] as $compareName => $compareDefinition) {
+                if ($name != $compareName) {
                     $localDefinitions[$compareName] = $compareDefinition;
                 }
             }
@@ -49,13 +49,13 @@ class JsonSchema extends Processor
         }
 
         // Add simple types.
-        foreach ( $controllers as $controller ) {
-            foreach ( $controller->endpoints as $endpoint ) {
-                foreach ( $endpoint->outputs as $output ) {
+        foreach ($controllers as $controller) {
+            foreach ($controller->endpoints as $endpoint) {
+                foreach ($endpoint->outputs as $output) {
                     /** @var Type $type */
-                    foreach ( $output->typeHint->types as $type ) {
-                        if ( !$this->swaggerProcessor->typeIsNull($type->type) && $this->swaggerProcessor->typeIsSimple($type->type) ) {
-                            if ( $type->type == TypeHint::ARRAY_TYPE ) {
+                    foreach ($output->typeHint->types as $type) {
+                        if (!$this->swaggerProcessor->typeIsNull($type->type) && $this->swaggerProcessor->typeIsSimple($type->type)) {
+                            if ($type->type == TypeHint::ARRAY_TYPE) {
                                 $swaggerType = array_key_exists($type->genericType, $this->swaggerProcessor->swaggerTypeMap) ? $this->swaggerProcessor->swaggerTypeMap[$type->genericType] : $type->genericType;
                                 $name = $type->genericType . TypeHint::ARRAY_TYPE_SHORT;
                                 $objects[$name] = json_encode([

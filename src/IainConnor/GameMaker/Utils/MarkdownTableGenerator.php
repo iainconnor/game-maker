@@ -3,7 +3,8 @@
 
 namespace IainConnor\GameMaker\Utils;
 
-class MarkdownTableGenerator {
+class MarkdownTableGenerator
+{
     /** @var int The source path */
     public $maxlen = 50;
     /** @var array The source path */
@@ -23,7 +24,8 @@ class MarkdownTableGenerator {
      * @param array $content Content
      * @param array|bool $align Alignment options [key => L|R|C, ...]
      */
-    public function __construct($header=null, $content=array(), $align=false) {
+    public function __construct($header = null, $content = array(), $align = false)
+    {
         if ($header) {
             $this->header = $header;
         } elseif ($content) {
@@ -44,9 +46,10 @@ class MarkdownTableGenerator {
     /**
      * Overwrite the alignment array
      *
-     * @param array $align   Alignment optios [key => L|R|C, ...]
+     * @param array $align Alignment optios [key => L|R|C, ...]
      */
-    public function setAlgin($align) {
+    public function setAlgin($align)
+    {
         $this->align = $align;
     }
 
@@ -56,14 +59,15 @@ class MarkdownTableGenerator {
      * @param array $content Content
      * @return $this
      */
-    public function addData($content) {
+    public function addData($content)
+    {
         foreach ($content as &$row) {
             foreach ($this->header as $key => $value) {
                 if (!isset($row[$key])) {
                     $row[$key] = '-';
                 } elseif (strlen($row[$key]) > $this->maxlen) {
                     $this->len[$key] = $this->maxlen;
-                    $row[$key] = substr($row[$key], 0, $this->maxlen-3).'...';
+                    $row[$key] = substr($row[$key], 0, $this->maxlen - 3) . '...';
                 } elseif (strlen($row[$key]) > $this->len[$key]) {
                     $this->len[$key] = strlen($row[$key]);
                 }
@@ -79,14 +83,15 @@ class MarkdownTableGenerator {
      *
      * @return string
      */
-    private function renderDelimiter() {
+    private function renderDelimiter()
+    {
         $res = '|';
         foreach ($this->len as $key => $l)
             $res .= (isset($this->align[$key]) && ($this->align[$key] == 'C' || $this->align[$key] == 'L') ? ':' : ' ')
-                .str_repeat('-', $l)
-                .(isset($this->align[$key]) && ($this->align[$key] == 'C' || $this->align[$key] == 'R') ? ':' : ' ')
-                .'|';
-        return $res."\r\n";
+                . str_repeat('-', $l)
+                . (isset($this->align[$key]) && ($this->align[$key] == 'C' || $this->align[$key] == 'R') ? ':' : ' ')
+                . '|';
+        return $res . "\r\n";
     }
 
     /**
@@ -95,26 +100,28 @@ class MarkdownTableGenerator {
      * @param  array $row
      * @return string
      */
-    private function renderRow($row) {
+    private function renderRow($row)
+    {
         $res = '|';
         foreach ($this->len as $key => $l) {
-            $res .= ' '.$row[$key].($l > strlen($row[$key]) ? str_repeat(' ', $l - strlen($row[$key])) : '').' |';
+            $res .= ' ' . $row[$key] . ($l > strlen($row[$key]) ? str_repeat(' ', $l - strlen($row[$key])) : '') . ' |';
         }
 
-        return $res."\r\n";
+        return $res . "\r\n";
     }
 
     /**
      * Render the table
      *
-     * @param  array  $content Additional table content
+     * @param  array $content Additional table content
      * @return string
      */
-    public function render($content=array()) {
+    public function render($content = array())
+    {
         $this->addData($content);
 
         $res = $this->renderRow($this->header)
-            .$this->renderDelimiter();
+            . $this->renderDelimiter();
         foreach ($this->data as $row)
             $res .= $this->renderRow($row);
 

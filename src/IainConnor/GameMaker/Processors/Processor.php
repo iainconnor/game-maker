@@ -15,7 +15,8 @@ abstract class Processor
      */
     public abstract function processControllers(array $controllers);
 
-    public function processController(ControllerInformation $controller) {
+    public function processController(ControllerInformation $controller)
+    {
 
         return $this->processControllers([$controller]);
     }
@@ -23,8 +24,9 @@ abstract class Processor
     /**
      * @param ObjectInformation[] $objects
      */
-    protected function alphabetizeObjects(array &$objects) {
-        usort($objects, function(ObjectInformation $a, ObjectInformation $b) {
+    protected function alphabetizeObjects(array &$objects)
+    {
+        usort($objects, function (ObjectInformation $a, ObjectInformation $b) {
             return $a->uniqueName >= $b->uniqueName ? 1 : -1;
         });
     }
@@ -32,8 +34,9 @@ abstract class Processor
     /**
      * @param ControllerInformation[] $controllers
      */
-    protected function alphabetizeControllers(array &$controllers) {
-        usort($controllers, function(ControllerInformation $a, ControllerInformation $b) {
+    protected function alphabetizeControllers(array &$controllers)
+    {
+        usort($controllers, function (ControllerInformation $a, ControllerInformation $b) {
             return $a->class >= $b->class ? 1 : -1;
         });
     }
@@ -42,12 +45,13 @@ abstract class Processor
      * @param array $strings
      * @return string|null
      */
-    protected function getLongestCommonPrefix(array $strings) {
+    protected function getLongestCommonPrefix(array $strings)
+    {
         $prefixLength = 0;
         while ($prefixLength < strlen($strings[0])) {
             $prefixChar = $strings[0][$prefixLength];
 
-            for ($i=1; $i < count($strings); $i++) {
+            for ($i = 1; $i < count($strings); $i++) {
                 if (strlen($strings[$i]) - 1 < $prefixLength || $strings[$i][$prefixLength] !== $prefixChar) {
                     break(2);
                 }
@@ -58,7 +62,7 @@ abstract class Processor
 
         $longestPrefix = substr($strings[0], 0, $prefixLength);
 
-        if ( !$longestPrefix || $longestPrefix == "/" ) {
+        if (!$longestPrefix || $longestPrefix == "/") {
 
             return "";
         }
@@ -70,7 +74,8 @@ abstract class Processor
      * @param string $string
      * @return string
      */
-    protected function camelToSnake($string) {
+    protected function camelToSnake($string)
+    {
 
         return ltrim(strtolower(preg_replace('/[A-Z]([A-Z](?![a-z]))*/', '_$0', $string)), '_');
     }

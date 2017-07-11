@@ -8,7 +8,8 @@ use IainConnor\Cornucopia\Type;
 use IainConnor\GameMaker\GameMaker;
 use IainConnor\GameMaker\ObjectInformation;
 
-class MySqlSchema extends Processor {
+class MySqlSchema extends Processor
+{
 
     protected $typeMap = [
         'string' => 'varchar(255)',
@@ -28,21 +29,21 @@ class MySqlSchema extends Processor {
         $uniqueTopLevelObjects = $this->getTopLevelObjects(GameMaker::getUniqueObjectInControllers($controllers));
         $this->alphabetizeObjects($uniqueTopLevelObjects);
 
-        $uniqueNames = array_map(function($element) {
+        $uniqueNames = array_map(function ($element) {
             return $element->uniqueName;
         }, $uniqueTopLevelObjects);
 
         $longestUniqueNamePrefix = $this->getLongestCommonPrefix($uniqueNames);
 
-        foreach ( $uniqueTopLevelObjects as $object ) {
+        foreach ($uniqueTopLevelObjects as $object) {
             $tableName = $this->camelToSnake(substr($object->uniqueName, strlen($longestUniqueNamePrefix)));
             $columns = [];
-            foreach ( $object->properties as $property ) {
+            foreach ($object->properties as $property) {
                 $sqlType = null;
                 /** @var Type $type */
-                foreach ( $property->types as $type ) {
-                    if ( $type->type != null ) {
-                        if ( $type->type == TypeHint::ARRAY_TYPE ) {
+                foreach ($property->types as $type) {
+                    if ($type->type != null) {
+                        if ($type->type == TypeHint::ARRAY_TYPE) {
                             $sqlType = 'int';
                             $joinTableName = $this->camelToSnake(substr($object->uniqueName, strlen($longestUniqueNamePrefix))) . "_" . $this->camelToSnake($property->variableName);
 
@@ -65,7 +66,7 @@ class MySqlSchema extends Processor {
                             }
 
                             $property->description = "references `" . $joinTableName . "`.`" . $tableName . "_id`" . ($property->description ? " " : "") . $property->description;
-                        } else if ( array_key_exists($type->type, $this->typeMap) ) {
+                        } else if (array_key_exists($type->type, $this->typeMap)) {
                             $sqlType = $this->typeMap[$type->type];
                         } else {
                             $sqlType = 'int';
@@ -76,20 +77,20 @@ class MySqlSchema extends Processor {
                     }
                 }
 
-                if ( $sqlType != null ) {
+                if ($sqlType != null) {
                     $defaultValue = null;
                     $isNullable = false;
 
-                    foreach ( $property->types as $type ) {
-                        if ( $type->type == null ) {
+                    foreach ($property->types as $type) {
+                        if ($type->type == null) {
                             $defaultValue = "NULL";
                             $isNullable = true;
                             break;
                         }
                     }
 
-                    if ( $property->defaultValue ) {
-                        if ( $sqlType == 'varchar' ) {
+                    if ($property->defaultValue) {
+                        if ($sqlType == 'varchar') {
                             $defaultValue = "\"" . $property->defaultValue . "\"";
                         } else {
                             $defaultValue = $property->defaultValue;
@@ -114,12 +115,13 @@ class MySqlSchema extends Processor {
      * @param ObjectInformation[] $objects
      * @return ObjectInformation[]
      */
-    protected function getTopLevelObjects(array $objects) {
+    protected function getTopLevelObjects(array $objects)
+    {
         $topLevelObjects = [];
 
-        foreach ( $objects as $object) {
-            foreach ( $objects as $otherObject ) {
-                if ( $object->class != $otherObject->class && get_parent_class($otherObject->class) !== false && get_parent_class($otherObject->class) == $object->class ) {
+        foreach ($objects as $object) {
+            foreach ($objects as $otherObject) {
+                if ($object->class != $otherObject->class && get_parent_class($otherObject->class) !== false && get_parent_class($otherObject->class) == $object->class) {
                     continue(2);
                 }
             }

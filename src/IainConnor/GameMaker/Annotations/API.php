@@ -12,5 +12,6 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * @Annotation
  * @Target("CLASS")
  */
-class API extends Path {
+class API extends Path
+{
 }

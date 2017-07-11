@@ -11,6 +11,7 @@ namespace IainConnor\GameMaker\Annotations;
  * @Annotation
  * @Target("METHOD")
  */
-class HEAD extends HttpMethod {
+class HEAD extends HttpMethod
+{
 
 }

@@ -57,7 +57,7 @@ class Swagger2 extends Processor
         $basePath = $this->extractBasePathFromControllers($controllers);
 
         $uniqueObjects = GameMaker::getUniqueObjectInControllers($controllers);
-        $uniqueNames = array_map(function($element) {
+        $uniqueNames = array_map(function ($element) {
             return $element->uniqueName;
         }, $uniqueObjects);
 
@@ -82,7 +82,7 @@ class Swagger2 extends Processor
             'definitions' => $this->generateJsonForDefinitions($uniqueObjects, $longestUniqueNamePrefix)
         ];
 
-        if ( $basePath ) {
+        if ($basePath) {
             $json['basePath'] = $basePath;
         }
 
@@ -94,16 +94,17 @@ class Swagger2 extends Processor
      * @return string
      * @throws \Exception
      */
-    protected function extractHostFromControllers(array $controllers) {
+    protected function extractHostFromControllers(array $controllers)
+    {
         $host = null;
 
-        foreach ( $controllers as $controller ) {
-            foreach ( $controller->endpoints as $endpoint ) {
-                if ( $host == null ) {
+        foreach ($controllers as $controller) {
+            foreach ($controller->endpoints as $endpoint) {
+                if ($host == null) {
                     $host = parse_url($endpoint->httpMethod->path, PHP_URL_HOST);
                 }
 
-                if ( $host != parse_url($endpoint->httpMethod->path, PHP_URL_HOST) ) {
+                if ($host != parse_url($endpoint->httpMethod->path, PHP_URL_HOST)) {
                     throw new \Exception("Sorry, Swagger 2.0 requires all endpoints be on the same host.");
                 }
             }
@@ -116,13 +117,14 @@ class Swagger2 extends Processor
      * @param ControllerInformation[] $controllers
      * @return string
      */
-    protected function extractBasePathFromControllers(array $controllers) {
+    protected function extractBasePathFromControllers(array $controllers)
+    {
         $paths = [];
 
-        foreach ( $controllers as $controller ) {
-            foreach ( $controller->endpoints as $endpoint ) {
+        foreach ($controllers as $controller) {
+            foreach ($controller->endpoints as $endpoint) {
                 $path = parse_url($endpoint->httpMethod->path, PHP_URL_PATH);
-                if ( array_search($path, $paths) === false ) {
+                if (array_search($path, $paths) === false) {
                     $paths[] = $path;
                 }
             }
@@ -135,13 +137,14 @@ class Swagger2 extends Processor
      * @param array $controllers
      * @return array
      */
-    protected function extractSchemesFromControllers(array $controllers) {
+    protected function extractSchemesFromControllers(array $controllers)
+    {
         $schemes = [];
 
-        foreach ( $controllers as $controller ) {
-            foreach ( $controller->endpoints as $endpoint ) {
+        foreach ($controllers as $controller) {
+            foreach ($controller->endpoints as $endpoint) {
                 $scheme = parse_url($endpoint->httpMethod->path, PHP_URL_SCHEME);
-                if ( array_search($scheme, $schemes) === false ) {
+                if (array_search($scheme, $schemes) === false) {
                     $schemes[] = $scheme;
                 }
             }
@@ -156,7 +159,8 @@ class Swagger2 extends Processor
      * @param string|null $basePath
      * @return array
      */
-    protected function generateJsonForControllers(array $controllers, $longestCommonNamePrefix, $basePath = null) {
+    protected function generateJsonForControllers(array $controllers, $longestCommonNamePrefix, $basePath = null)
+    {
         $json = [];
 
         $this->alphabetizeControllers($controllers);
@@ -174,11 +178,12 @@ class Swagger2 extends Processor
      * @param string|null $basePath
      * @return array
      */
-    protected function generateJsonForController(ControllerInformation $controller, $longestCommonNamePrefix, $basePath = null) {
+    protected function generateJsonForController(ControllerInformation $controller, $longestCommonNamePrefix, $basePath = null)
+    {
         $json = [];
 
-        foreach ( $controller->endpoints as $endpoint ) {
-            if ( count($endpoint->outputs) ) {
+        foreach ($controller->endpoints as $endpoint) {
+            if (count($endpoint->outputs)) {
                 $relativePath = substr(parse_url($endpoint->httpMethod->path, PHP_URL_PATH), $basePath ? strlen($basePath) : 0);
 
                 $json[$relativePath][strtolower(GameMaker::getAfterLastSlash(get_class($endpoint->httpMethod)))] = [
@@ -198,7 +203,8 @@ class Swagger2 extends Processor
      * @param string[] $tags
      * @return array|\string[]
      */
-    protected function generateJsonForTags(array $tags) {
+    protected function generateJsonForTags(array $tags)
+    {
 
         return $tags;
     }
@@ -209,20 +215,21 @@ class Swagger2 extends Processor
      * @return array
      * @throws \Exception
      */
-    protected function generateJsonForResponses(array $outputs, $longestCommonNamePrefix) {
+    protected function generateJsonForResponses(array $outputs, $longestCommonNamePrefix)
+    {
         $json = [];
 
-        foreach ( $outputs as $output ) {
+        foreach ($outputs as $output) {
             /** @var OutputTypeHint $typeHint */
             $typeHint = $output->typeHint;
 
-            if ( array_key_exists($output->statusCode, $json) || count($typeHint->types) > 1 ) {
+            if (array_key_exists($output->statusCode, $json) || count($typeHint->types) > 1) {
                 throw new \Exception("Sorry, as of Swagger 2.0, you can only have one response per HTTP status code. See https://github.com/OAI/OpenAPI-Specification/issues/270.");
             }
 
             $type = $typeHint->types[0];
             $schema = [];
-            if ( !$this->typeIsNull($type->type) ) {
+            if (!$this->typeIsNull($type->type)) {
                 if ($this->typeIsSimple($type->type)) {
                     $schema['type'] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
                 } else {
@@ -230,7 +237,7 @@ class Swagger2 extends Processor
                 }
 
                 if ($type->type == TypeHint::ARRAY_TYPE) {
-                    if ( !$this->typeIsNull($type->genericType) ) {
+                    if (!$this->typeIsNull($type->genericType)) {
                         if ($this->typeIsSimple($type->type)) {
                             $schema['items']['type'] = $this->getSwaggerType($type->genericType, $longestCommonNamePrefix);
                         } else {
@@ -240,11 +247,11 @@ class Swagger2 extends Processor
                 }
             }
 
-            if ( $typeHint->description ) {
+            if ($typeHint->description) {
                 $json[$output->statusCode]['description'] = $typeHint->description;
             }
 
-            if ( !empty($schema) ) {
+            if (!empty($schema)) {
                 $json[$output->statusCode]['schema'] = $schema;
             }
         }
@@ -258,7 +265,8 @@ class Swagger2 extends Processor
      * @return array
      * @throws \Exception
      */
-    protected function generateJsonForParameters(array $inputs, $longestCommonNamePrefix) {
+    protected function generateJsonForParameters(array $inputs, $longestCommonNamePrefix)
+    {
         $json = [];
 
         foreach ($inputs as $input) {
@@ -272,8 +280,8 @@ class Swagger2 extends Processor
                 'required' => is_null($typeHint->defaultValue) && !$this->doesNullTypeExist($typeHint->types)
             ];
 
-            foreach ( $typeHint->types as $type ) {
-                if ( !$this->typeIsNull($type->type) ) {
+            foreach ($typeHint->types as $type) {
+                if (!$this->typeIsNull($type->type)) {
                     if ($this->typeIsSimple($type->type)) {
                         $parameter['type'][] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
                     } else {
@@ -285,16 +293,16 @@ class Swagger2 extends Processor
                 }
             }
 
-            if ( isset($parameter['type']) && count($parameter['type']) == 1 ) {
+            if (isset($parameter['type']) && count($parameter['type']) == 1) {
                 $parameter['type'] = array_shift($parameter['type']);
             }
 
-            if ( $input->enum ) {
+            if ($input->enum) {
                 $parameter['enum'] = $input->enum;
             }
 
             $arrayType = $this->getArrayType($typeHint->types);
-            if ( $arrayType ) {
+            if ($arrayType) {
                 if ($this->typeIsSimple($arrayType->genericType)) {
                     $parameter['items']['type'] = $this->getSwaggerType($arrayType->genericType, $longestCommonNamePrefix);
                 } else {
@@ -311,12 +319,13 @@ class Swagger2 extends Processor
     }
 
     /**
-     * @param Type[] $types;
+     * @param Type[] $types ;
      * @return bool
      */
-    protected function doesNullTypeExist(array $types) {
-        foreach ($types as $type ) {
-            if ( $this->typeIsNull($type->type) ) {
+    protected function doesNullTypeExist(array $types)
+    {
+        foreach ($types as $type) {
+            if ($this->typeIsNull($type->type)) {
 
                 return true;
             }
@@ -326,12 +335,13 @@ class Swagger2 extends Processor
     }
 
     /**
-     * @param Type[] $types;
+     * @param Type[] $types ;
      * @return Type|null
      */
-    protected function getArrayType(array $types) {
-        foreach ($types as $type ) {
-            if ( $type->type == TypeHint::ARRAY_TYPE ) {
+    protected function getArrayType(array $types)
+    {
+        foreach ($types as $type) {
+            if ($type->type == TypeHint::ARRAY_TYPE) {
 
                 return $type;
             }
@@ -344,7 +354,8 @@ class Swagger2 extends Processor
      * @param string $type
      * @return bool
      */
-    public function typeIsNull($type) {
+    public function typeIsNull($type)
+    {
 
         return $type == null || strtoupper($type) == "NULL";
     }
@@ -353,7 +364,8 @@ class Swagger2 extends Processor
      * @param string $type
      * @return bool
      */
-    public function typeIsSimple($type) {
+    public function typeIsSimple($type)
+    {
 
         return $type == TypeHint::ARRAY_TYPE || array_search($type, TypeHint::$basicTypes) !== false;
     }
@@ -363,9 +375,10 @@ class Swagger2 extends Processor
      * @param $longestCommonNamePrefix
      * @return array|null|string
      */
-    protected function getSwaggerType($type, $longestCommonNamePrefix) {
-        if ( !$this->typeIsNull($type) ) {
-            if ( $this->typeIsSimple($type) ) {
+    protected function getSwaggerType($type, $longestCommonNamePrefix)
+    {
+        if (!$this->typeIsNull($type)) {
+            if ($this->typeIsSimple($type)) {
                 if (array_key_exists($type, $this->swaggerTypeMap)) {
 
                     return $this->swaggerTypeMap[$type];
@@ -386,12 +399,13 @@ class Swagger2 extends Processor
      * @param $longestCommonNamePrefix
      * @return array
      */
-    protected function generateJsonForDefinitions(array $objects, $longestCommonNamePrefix) {
+    protected function generateJsonForDefinitions(array $objects, $longestCommonNamePrefix)
+    {
         $this->alphabetizeObjects($objects);
 
         $json = [];
 
-        foreach ( $objects as $object ) {
+        foreach ($objects as $object) {
             $json[substr($object->uniqueName, strlen($longestCommonNamePrefix))] = $this->generateJsonForDefinition($object, $objects, $longestCommonNamePrefix);
         }
 
@@ -405,11 +419,12 @@ class Swagger2 extends Processor
      * @return array
      * @throws \Exception
      */
-    protected function generateJsonForDefinition(ObjectInformation $object, array $allObjects, $longestCommonNamePrefix) {
+    protected function generateJsonForDefinition(ObjectInformation $object, array $allObjects, $longestCommonNamePrefix)
+    {
         $definedParentClass = $this->getParentClass($object->class, $allObjects);
 
         // If there's a defined parent, we only want the properties unique to this child.
-        if ( $definedParentClass ) {
+        if ($definedParentClass) {
             $propertiesList = $object->specificProperties;
         } else {
             $propertiesList = $object->properties;
@@ -418,14 +433,14 @@ class Swagger2 extends Processor
         $requiredProperties = [];
         $properties = [];
 
-        foreach ( $propertiesList as $property ) {
-            if ( is_null($property->defaultValue) && !$this->doesNullTypeExist($property->types) ) {
+        foreach ($propertiesList as $property) {
+            if (is_null($property->defaultValue) && !$this->doesNullTypeExist($property->types)) {
                 $requiredProperties[] = $property->variableName;
             }
 
             $propertySchema = [];
-            foreach ( $property->types as $type ) {
-                if ( !$this->typeIsNull($type->type) ) {
+            foreach ($property->types as $type) {
+                if (!$this->typeIsNull($type->type)) {
                     if ($this->typeIsSimple($type->type)) {
                         $propertySchema['type'][] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
                     } else {
@@ -436,7 +451,7 @@ class Swagger2 extends Processor
                     }
 
                     if ($type->type == TypeHint::ARRAY_TYPE) {
-                        if ( !$this->typeIsNull($type->genericType) ) {
+                        if (!$this->typeIsNull($type->genericType)) {
                             if ($this->typeIsSimple($type->genericType)) {
                                 $propertySchema['items']['type'] = $this->getSwaggerType($type->genericType, $longestCommonNamePrefix);
                             } else {
@@ -447,19 +462,19 @@ class Swagger2 extends Processor
                 }
             }
 
-            if ( isset($propertySchema['type']) && count($propertySchema['type']) == 1 ) {
+            if (isset($propertySchema['type']) && count($propertySchema['type']) == 1) {
                 $propertySchema['type'] = array_shift($propertySchema['type']);
             }
 
             $properties[$property->variableName] = $propertySchema;
         }
 
-        if ( $definedParentClass ) {
+        if ($definedParentClass) {
             $definedParentClassProperties = [
                 'properties' => $properties
             ];
 
-            if ( count($requiredProperties) ) {
+            if (count($requiredProperties)) {
                 $definedParentClassProperties['required'] = $requiredProperties;
             }
 
@@ -478,7 +493,7 @@ class Swagger2 extends Processor
                 'properties' => $properties
             ];
 
-            if ( count($requiredProperties) ) {
+            if (count($requiredProperties)) {
                 $typeJson['required'] = $requiredProperties;
             }
 
@@ -491,12 +506,13 @@ class Swagger2 extends Processor
      * @param array $objects
      * @return ObjectInformation|null
      */
-    protected function getParentClass($class, array $objects) {
+    protected function getParentClass($class, array $objects)
+    {
         $parentClass = get_parent_class($class);
-        if ( $parentClass !== false ) {
+        if ($parentClass !== false) {
             /** @var ObjectInformation $object */
-            foreach ( $objects as $object ) {
-                if ( $object->class == $parentClass ) {
+            foreach ($objects as $object) {
+                if ($object->class == $parentClass) {
 
                     return $object;
                 }

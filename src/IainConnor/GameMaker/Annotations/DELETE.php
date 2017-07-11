@@ -13,6 +13,7 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * @Annotation
  * @Target("METHOD")
  */
-class DELETE extends HttpMethod {
+class DELETE extends HttpMethod
+{
 
 }

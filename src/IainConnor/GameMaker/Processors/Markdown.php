@@ -7,8 +7,8 @@ namespace IainConnor\GameMaker\Processors;
 use IainConnor\Cornucopia\Type;
 use IainConnor\GameMaker\ControllerInformation;
 use IainConnor\GameMaker\GameMaker;
-use IainConnor\GameMaker\Utils\HttpStatusCodes;
 use IainConnor\GameMaker\ObjectInformation;
+use IainConnor\GameMaker\Utils\HttpStatusCodes;
 use IainConnor\GameMaker\Utils\MarkdownTableGenerator;
 
 class Markdown extends Processor
@@ -38,7 +38,7 @@ class Markdown extends Processor
     public function processControllers(array $controllers)
     {
         $markdown = "# " . $this->title . PHP_EOL;
-        if ( $this->subTitle ) {
+        if ($this->subTitle) {
             $markdown .= "### " . $this->subTitle . PHP_EOL;
         }
         $markdown .= PHP_EOL;
@@ -60,7 +60,8 @@ class Markdown extends Processor
      * @param ControllerInformation[] $controllers
      * @return string
      */
-    protected function generateMarkdownForControllers(array $controllers) {
+    protected function generateMarkdownForControllers(array $controllers)
+    {
         $this->alphabetizeControllers($controllers);
 
         return join(PHP_EOL, array_map([$this, "generateMarkdownForController"], $controllers));
@@ -70,21 +71,22 @@ class Markdown extends Processor
      * @param ControllerInformation $controller
      * @return string
      */
-    protected function generateMarkdownForController(ControllerInformation $controller) {
+    protected function generateMarkdownForController(ControllerInformation $controller)
+    {
         $markdown = "### " . GameMaker::getAfterLastSlash($controller->class) . " Controller." . PHP_EOL;
-        foreach ( $controller->endpoints as $endpoint) {
+        foreach ($controller->endpoints as $endpoint) {
             $markdown .= PHP_EOL . "#### `" . GameMaker::getAfterLastSlash(get_class($endpoint->httpMethod)) . "` [" . $endpoint->httpMethod->path . "](<" . $endpoint->httpMethod->path . ">)" . PHP_EOL;
             $markdown .= str_replace("\n", "  " . PHP_EOL, $endpoint->description) . PHP_EOL;
 
-            if ( count($endpoint->tags) ) {
+            if (count($endpoint->tags)) {
                 $markdown .= PHP_EOL . "##### Tags" . PHP_EOL . PHP_EOL;
 
-                foreach ( $endpoint->tags as $tag ) {
+                foreach ($endpoint->tags as $tag) {
                     $markdown .= "* " . $tag . PHP_EOL;
                 }
             }
 
-            if ( count($endpoint->inputs) ) {
+            if (count($endpoint->inputs)) {
                 $markdown .= PHP_EOL . "##### Inputs" . PHP_EOL . PHP_EOL;
 
                 $markdownTableGenerator = new MarkdownTableGenerator(['Input Name', 'Variable Name', 'Located In', 'Description', 'Allowed Type(s)']);
@@ -98,7 +100,7 @@ class Markdown extends Processor
                 $markdown .= $markdownTableGenerator->render();
             }
 
-            if ( count($endpoint->outputs) ) {
+            if (count($endpoint->outputs)) {
                 $markdown .= PHP_EOL . "##### Outputs" . PHP_EOL . PHP_EOL;
 
                 $markdownTableGenerator = new MarkdownTableGenerator(['Status', 'Status Code', 'Description', 'Type(s)']);
@@ -120,7 +122,8 @@ class Markdown extends Processor
      * @param ObjectInformation[] $objects
      * @return string
      */
-    protected function generateMarkdownForObjects(array $objects) {
+    protected function generateMarkdownForObjects(array $objects)
+    {
         $this->alphabetizeObjects($objects);
 
         return join(PHP_EOL, array_map([$this, "generateMarkdownForObject"], $objects));
@@ -130,11 +133,12 @@ class Markdown extends Processor
      * @param ObjectInformation $object
      * @return string
      */
-    protected function generateMarkdownForObject(ObjectInformation $object) {
+    protected function generateMarkdownForObject(ObjectInformation $object)
+    {
         $markdown = "### " . GameMaker::getAfterLastSlash($object->uniqueName) . " Entity." . PHP_EOL;
         $markdown .= "#### Class `" . $object->class . "`" . PHP_EOL . PHP_EOL;
 
-        if ( count($object->properties) ) {
+        if (count($object->properties)) {
             $markdownTableGenerator = new MarkdownTableGenerator(['Property', 'Description', 'Type(s)']);
 
             foreach ($object->properties as $key => $property) {

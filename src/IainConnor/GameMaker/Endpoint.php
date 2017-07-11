@@ -8,25 +8,26 @@ use IainConnor\GameMaker\Annotations\HttpMethod;
 use IainConnor\GameMaker\Annotations\Input;
 use IainConnor\GameMaker\Annotations\Output;
 
-class Endpoint {
+class Endpoint
+{
 
-	/** @var HttpMethod */
-	public $httpMethod;
+    /** @var HttpMethod */
+    public $httpMethod;
 
-	/** @var Input[] */
-	public $inputs;
+    /** @var Input[] */
+    public $inputs;
 
-	/** @var Output[] */
-	public $outputs;
+    /** @var Output[] */
+    public $outputs;
 
-	/** @var string|null */
-	public $description;
+    /** @var string|null */
+    public $description;
 
     /**
      * @var string
      */
-	public $method;
+    public $method;
 
-	/** @var string[] */
-	public $tags;
+    /** @var string[] */
+    public $tags;
 }

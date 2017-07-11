@@ -5,7 +5,6 @@ namespace IainConnor\GameMaker\Annotations;
 
 use Doctrine\Common\Annotations\Annotation\Enum;
 use Doctrine\Common\Annotations\Annotation\Target;
-use IainConnor\Cornucopia\Annotations\OutputTypeHint;
 
 /**
  * Class Output
@@ -14,7 +13,8 @@ use IainConnor\Cornucopia\Annotations\OutputTypeHint;
  * @Annotation
  * @Target("METHOD")
  */
-class Output {
+class Output
+{
 
     /**
      * @var int HTTP Status code.

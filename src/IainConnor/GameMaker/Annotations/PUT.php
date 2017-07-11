@@ -11,6 +11,7 @@ namespace IainConnor\GameMaker\Annotations;
  * @Annotation
  * @Target("METHOD")
  */
-class PUT extends HttpMethod {
+class PUT extends HttpMethod
+{
 
 }

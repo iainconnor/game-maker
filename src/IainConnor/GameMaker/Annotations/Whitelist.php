@@ -3,15 +3,16 @@
 
 namespace IainConnor\GameMaker\Annotations;
 
+use Doctrine\Common\Annotations\Annotation\Target;
 
 /**
- * Class PATCH
+ * Class Whitelist
  *
  * @package IainConnor\GameMaker\Annotations
  * @Annotation
- * @Target("METHOD")
+ * @Target("CLASS")
  */
-class PATCH extends HttpMethod
+class Whitelist
 {
 
 }

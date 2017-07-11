@@ -11,6 +11,7 @@ namespace IainConnor\GameMaker\Annotations;
  * @Annotation
  * @Target("METHOD")
  */
-class POST extends HttpMethod {
+class POST extends HttpMethod
+{
 
 }

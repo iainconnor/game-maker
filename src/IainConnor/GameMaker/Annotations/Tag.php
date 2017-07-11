@@ -11,7 +11,8 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * @Annotation
  * @Target({"CLASS", "METHOD"})
  */
-class Tag {
+class Tag
+{
     /** @var string[] */
     public $tags;
 

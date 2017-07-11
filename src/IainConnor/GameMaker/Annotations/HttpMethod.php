@@ -12,15 +12,16 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * @Annotation
  * @Target("METHOD")
  */
-abstract class HttpMethod extends Path {
+abstract class HttpMethod extends Path
+{
 
-	/** @var string[] */
-	public static $allHttpMethods = [
-		GET::class,
-		POST::class,
-		HEAD::class,
-		DELETE::class,
-		PUT::class,
-		PATCH::class
-	];
+    /** @var string[] */
+    public static $allHttpMethods = [
+        GET::class,
+        POST::class,
+        HEAD::class,
+        DELETE::class,
+        PUT::class,
+        PATCH::class
+    ];
 }

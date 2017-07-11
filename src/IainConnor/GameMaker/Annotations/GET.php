@@ -13,6 +13,7 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * @Annotation
  * @Target("METHOD")
  */
-class GET extends HttpMethod {
+class GET extends HttpMethod
+{
 
 }

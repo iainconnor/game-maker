@@ -11,17 +11,18 @@ use Doctrine\Common\Annotations\Annotation\Required;
  * @package IainConnor\GameMaker\Annotations
  * @Annotation
  */
-abstract class Path {
+abstract class Path
+{
 
-	/**
-	 * @Required()
-	 * @var string
-	 */
-	public $path;
+    /**
+     * @Required()
+     * @var string
+     */
+    public $path;
 
-	/** @var string */
-	public $friendlyName = null;
+    /** @var string */
+    public $friendlyName = null;
 
-	/** @var bool */
-	public $ignoreParent = false;
+    /** @var bool */
+    public $ignoreParent = false;
 }

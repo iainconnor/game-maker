@@ -13,25 +13,26 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * @Annotation
  * @Target("METHOD")
  */
-class Input {
+class Input
+{
 
     /**
      * @var string
      */
-	public $name;
+    public $name;
 
     /** @var string */
-	public $variableName;
+    public $variableName;
 
-	/**
-	 * @Enum({"PATH", "QUERY", "FORM", "BODY", "HEADER"})
-	 */
-	public $in;
+    /**
+     * @Enum({"PATH", "QUERY", "FORM", "BODY", "HEADER"})
+     */
+    public $in;
 
-	/** @var array */
-	public $enum;
+    /** @var array */
+    public $enum;
 
-	public $typeHint;
+    public $typeHint;
 
     /**
      * @var string

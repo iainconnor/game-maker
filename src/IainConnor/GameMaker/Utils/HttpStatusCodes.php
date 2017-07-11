@@ -9,7 +9,8 @@
 namespace IainConnor\GameMaker\Utils;
 
 
-class HttpStatusCodes {
+class HttpStatusCodes
+{
     const SWITCHING_PROTOCOLS = 101;
     const PROCESSING = 102;
     const OK = 200;
@@ -65,10 +66,11 @@ class HttpStatusCodes {
     const BANDWIDTH_LIMIT_EXCEEDED = 509;
     const NOT_EXTENDED = 510;
 
-    public static function getDescriptionForCode($code) {
+    public static function getDescriptionForCode($code)
+    {
         $reflectionClass = new \ReflectionClass(HttpStatusCodes::class);
-        foreach ( $reflectionClass->getConstants() as $name => $constant ) {
-            if ( $constant == $code ) {
+        foreach ($reflectionClass->getConstants() as $name => $constant) {
+            if ($constant == $code) {
 
                 return $name;
             }

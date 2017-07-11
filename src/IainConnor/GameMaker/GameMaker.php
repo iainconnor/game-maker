@@ -4,14 +4,14 @@
 namespace IainConnor\GameMaker;
 
 
+use Doctrine\Common\Annotations\AnnotationRegistry;
+use Doctrine\Common\Cache\ArrayCache;
 use hanneskod\classtools\Iterator\ClassIterator;
 use IainConnor\Cornucopia\AnnotationReader;
-use Doctrine\Common\Annotations\AnnotationRegistry;
 use IainConnor\Cornucopia\Annotations\InputTypeHint;
 use IainConnor\Cornucopia\Annotations\OutputTypeHint;
 use IainConnor\Cornucopia\Annotations\TypeHint;
 use IainConnor\Cornucopia\CachedReader;
-use Doctrine\Common\Cache\ArrayCache;
 use IainConnor\Cornucopia\Type;
 use IainConnor\GameMaker\Annotations\API;
 use IainConnor\GameMaker\Annotations\Controller;
@@ -28,47 +28,49 @@ use IainConnor\GameMaker\Annotations\PATCH;
 use IainConnor\GameMaker\Annotations\POST;
 use IainConnor\GameMaker\Annotations\PUT;
 use IainConnor\GameMaker\Annotations\Tag;
+use IainConnor\GameMaker\Annotations\Whitelist;
 use IainConnor\GameMaker\NamingConventions\CamelToSnake;
 use IainConnor\GameMaker\NamingConventions\NamingConvention;
 use IainConnor\GameMaker\Utils\HttpStatusCodes;
 use Symfony\Component\Finder\Finder;
 
-class GameMaker {
+class GameMaker
+{
 
     /**
      * @var GameMaker
      */
     protected static $instance;
 
-	/**
-	 * Doctrine Annotation reader.
-	 * @see http://docs.doctrine-project.org/projects/doctrine-common/en/latest/reference/annotations.html
-	 * @var CachedReader
-	 */
-	protected $annotationReader;
+    /**
+     * Doctrine Annotation reader.
+     * @see http://docs.doctrine-project.org/projects/doctrine-common/en/latest/reference/annotations.html
+     * @var CachedReader
+     */
+    protected $annotationReader;
 
-	/**
-	 * Naming convention to use when guessing the path for a function name.
-	 * @var NamingConvention
-	 */
-	protected $functionToPathNamingConvention;
+    /**
+     * Naming convention to use when guessing the path for a function name.
+     * @var NamingConvention
+     */
+    protected $functionToPathNamingConvention;
 
-	/**
-	 * Naming convention to use when guessing the input name for a given variable name.
-	 * @var NamingConvention
-	 */
-	protected $variableNameToInputNamingConvention;
+    /**
+     * Naming convention to use when guessing the input name for a given variable name.
+     * @var NamingConvention
+     */
+    protected $variableNameToInputNamingConvention;
 
-	/** @var int Maximum depth to recurse in parsed Objects. */
-	protected $maxRecursionDepth = 3;
+    /** @var int Maximum depth to recurse in parsed Objects. */
+    protected $maxRecursionDepth = 3;
 
-	/** @var string The default format for arrays. */
-	protected $defaultArrayFormat = "CSV";
+    /** @var string The default format for arrays. */
+    protected $defaultArrayFormat = "CSV";
 
     /**
      * @var ControllerInformation[]
      */
-	protected $parsedControllers = [];
+    protected $parsedControllers = [];
 
     /**
      * @var Finder
@@ -96,8 +98,9 @@ class GameMaker {
      *
      * @return GameMaker
      */
-    public static function instance() {
-        if ( static::$instance == null ) {
+    public static function instance()
+    {
+        if (static::$instance == null) {
             static::$instance = static::boot();
         }
 
@@ -105,13 +108,14 @@ class GameMaker {
     }
 
     /**
-	 * Boot and ensure requirements are filled.
-	 */
-	protected static function boot() {
+     * Boot and ensure requirements are filled.
+     */
+    protected static function boot()
+    {
 
         AnnotationRegistry::registerAutoloadNamespace('IainConnor\GameMaker\Annotations', static::getSrcRoot());
 
-	    return new GameMaker(
+        return new GameMaker(
             new CachedReader(
                 new AnnotationReader(),
                 new ArrayCache(),
@@ -121,7 +125,7 @@ class GameMaker {
             new CamelToSnake(),
             new Finder()
         );
-	}
+    }
 
     /**
      * Retrieve all endpoints and objects defined in the specified path.
@@ -130,9 +134,10 @@ class GameMaker {
      * @param int $depth
      * @return ControllerInformation[]
      */
-	public function parseControllersInPath($path, $depth = 0) {
+    public function parseControllersInPath($path, $depth = 0)
+    {
 
-	    return $this->parseControllersInNamespaceInPath(null, $path, $depth);
+        return $this->parseControllersInNamespaceInPath(null, $path, $depth);
     }
 
     /**
@@ -143,7 +148,8 @@ class GameMaker {
      * @param int $depth
      * @return ControllerInformation[]
      */
-	public function parseControllersInNamespaceInPath($namespace, $path, $depth = 0) {
+    public function parseControllersInNamespaceInPath($namespace, $path, $depth = 0)
+    {
         $classes = [];
 
         $this->finder->sortByName();
@@ -152,7 +158,7 @@ class GameMaker {
         $iterator = new ClassIterator($this->finder);
 
         /** @var \ReflectionClass $reflectionClass */
-        foreach ( $iterator->inNamespace($namespace) as $reflectionClass ) {
+        foreach ($iterator->inNamespace($namespace) as $reflectionClass) {
             $classes[] = $reflectionClass->getName();
         }
 
@@ -165,7 +171,8 @@ class GameMaker {
      * @param array $classes
      * @return ControllerInformation[]
      */
-    public function parseControllers(array $classes) {
+    public function parseControllers(array $classes)
+    {
 
         return array_map([$this, "parseController"], $classes);
     }
@@ -176,135 +183,141 @@ class GameMaker {
      * @param $class
      * @return ControllerInformation
      */
-	public function parseController($class) {
+    public function parseController($class)
+    {
 
-		/** @var Endpoint[] $endpoints */
-		$endpoints = [];
+        /** @var Endpoint[] $endpoints */
+        $endpoints = [];
 
-		/** @var ObjectInformation[] $parsedObjects */
-		$parsedObjects = [];
+        /** @var ObjectInformation[] $parsedObjects */
+        $parsedObjects = [];
 
-		$reflectedClass = new \ReflectionClass($class);
+        $reflectedClass = new \ReflectionClass($class);
 
-		/** @var API|null $apiAnnotation */
-		$apiAnnotation = $this->annotationReader->getClassAnnotation($reflectedClass, API::class);
+        /** @var API|null $apiAnnotation */
+        $apiAnnotation = $this->annotationReader->getClassAnnotation($reflectedClass, API::class);
 
-		/** @var ControllerInformation|null $controllerAnnotation */
-		$controllerAnnotation = $this->annotationReader->getClassAnnotation($reflectedClass, Controller::class);
+        /** @var ControllerInformation|null $controllerAnnotation */
+        $controllerAnnotation = $this->annotationReader->getClassAnnotation($reflectedClass, Controller::class);
 
-		/** @var OutputWrapper|null $outputWrapperAnnotation */
-		$outputWrapperAnnotation = $this->annotationReader->getClassAnnotation($reflectedClass, OutputWrapper::class);
+        /** @var OutputWrapper|null $outputWrapperAnnotation */
+        $outputWrapperAnnotation = $this->annotationReader->getClassAnnotation($reflectedClass, OutputWrapper::class);
 
-		/** @var Tag|null $tagAnnotation */
-		$tagAnnotation = $this->annotationReader->getClassAnnotation($reflectedClass, Tag::class);
+        /** @var Tag|null $tagAnnotation */
+        $tagAnnotation = $this->annotationReader->getClassAnnotation($reflectedClass, Tag::class);
 
-		foreach ($reflectedClass->getMethods(\ReflectionMethod::IS_PUBLIC) as $reflectionMethod) {
+        $whitelistAnnotation = $this->annotationReader->getClassAnnotation($reflectedClass, Whitelist::class);
 
-			if ($this->annotationReader->getMethodAnnotation($reflectionMethod, IgnoreEndpoint::class) === null) {
-				$httpMethod = $this->getFullHttpMethod($reflectionMethod, $apiAnnotation, $controllerAnnotation);
+        foreach ($reflectedClass->getMethods(\ReflectionMethod::IS_PUBLIC) as $reflectionMethod) {
 
-				if ($httpMethod !== null) {
+            if ($this->annotationReader->getMethodAnnotation($reflectionMethod, IgnoreEndpoint::class) === null) {
+                $httpMethod = $this->getFullHttpMethod($reflectionMethod, $apiAnnotation, $controllerAnnotation, $whitelistAnnotation !== null);
+
+                if ($httpMethod !== null) {
                     $endpoint = new Endpoint();
 
                     $endpoint->method = $reflectionMethod->getName();
-					$endpoint->httpMethod = $httpMethod;
-					$endpoint->inputs = $this->getInputsForMethod($reflectionMethod, $httpMethod);
+                    $endpoint->httpMethod = $httpMethod;
+                    $endpoint->inputs = $this->getInputsForMethod($reflectionMethod, $httpMethod);
                     $endpoint->outputs = $this->getOutputsForMethod($reflectionMethod, $httpMethod, $outputWrapperAnnotation, $parsedObjects);
                     $endpoint->tags = $this->getTagsForMethod($reflectionMethod, $tagAnnotation);
 
-					foreach ( array_map("trim", explode("\n", preg_replace("/^(\s*)(\/*)(\**)(\/*)/m", "", $reflectionMethod->getDocComment()))) as $docblockLine ) {
-						if ( $docblockLine && substr($docblockLine, 0, 1) != "@" ) {
-							$endpoint->description .= $docblockLine . "\n";
-						}
-					}
-					if ( $endpoint->description ) {
-						$endpoint->description = substr($endpoint->description, 0, strlen($endpoint->description) - 1);
-					}
+                    foreach (array_map("trim", explode("\n", preg_replace("/^(\s*)(\/*)(\**)(\/*)/m", "", $reflectionMethod->getDocComment()))) as $docblockLine) {
+                        if ($docblockLine && substr($docblockLine, 0, 1) != "@") {
+                            $endpoint->description .= $docblockLine . "\n";
+                        }
+                    }
+                    if ($endpoint->description) {
+                        $endpoint->description = substr($endpoint->description, 0, strlen($endpoint->description) - 1);
+                    }
 
 
-					$endpoints[] = $endpoint;
-				}
-			}
-		}
+                    $endpoints[] = $endpoint;
+                }
+            }
+        }
 
-		$controller = new ControllerInformation($class, $endpoints, array_values($parsedObjects));
+        $controller = new ControllerInformation($class, $endpoints, array_values($parsedObjects));
 
-		$this->parsedControllers[$class] = $controller;
+        $this->parsedControllers[$class] = $controller;
 
-		return $controller;
-	}
+        return $controller;
+    }
 
-	/**
-	 * Retrieves the full HTTP method being described by the given method.
-	 *
-	 * @param \ReflectionMethod $reflectionMethod
-	 * @param API|null $apiAnnotation
-	 * @param Controller|null $controllerAnnotation
-	 * @return HttpMethod|null
-	 */
-	protected function getFullHttpMethod(\ReflectionMethod $reflectionMethod, API $apiAnnotation = null, Controller $controllerAnnotation = null) {
-		/** @var HttpMethod|null $definedMethod */
-		$definedMethod = $this->annotationReader->getMethodAnnotation($reflectionMethod, HttpMethod::class);
+    /**
+     * Retrieves the full HTTP method being described by the given method.
+     *
+     * @param \ReflectionMethod $reflectionMethod
+     * @param API|null $apiAnnotation
+     * @param Controller|null $controllerAnnotation
+     * @param bool $whitelistMode
+     * @return HttpMethod|null
+     */
+    protected function getFullHttpMethod(\ReflectionMethod $reflectionMethod, API $apiAnnotation = null, Controller $controllerAnnotation = null, $whitelistMode = false)
+    {
+        /** @var HttpMethod|null $definedMethod */
+        $definedMethod = $this->annotationReader->getMethodAnnotation($reflectionMethod, HttpMethod::class);
 
-		if ( $definedMethod === null ) {
-			$definedMethod = $this->guessHttpMethodFromMethod($reflectionMethod);
-		}
+        if ($definedMethod === null && !$whitelistMode) {
+            $definedMethod = $this->guessHttpMethodFromMethod($reflectionMethod);
+        }
 
-		if ( $definedMethod !== null ) {
-			if ($definedMethod->ignoreParent) {
+        if ($definedMethod !== null) {
+            if ($definedMethod->ignoreParent) {
 
-				return $definedMethod;
-			}
+                return $definedMethod;
+            }
 
-			if ( $controllerAnnotation !== null ) {
+            if ($controllerAnnotation !== null) {
 
-				$definedMethod->path = $controllerAnnotation->path . $definedMethod->path;
+                $definedMethod->path = $controllerAnnotation->path . $definedMethod->path;
 
-				if ( $controllerAnnotation->ignoreParent ) {
+                if ($controllerAnnotation->ignoreParent) {
 
-					return $definedMethod;
-				}
-			}
+                    return $definedMethod;
+                }
+            }
 
-			if ( $apiAnnotation !== null ) {
+            if ($apiAnnotation !== null) {
 
-				$definedMethod->path = $apiAnnotation->path . $definedMethod->path;
-			}
-		}
+                $definedMethod->path = $apiAnnotation->path . $definedMethod->path;
+            }
+        }
 
-		return $definedMethod;
-	}
+        return $definedMethod;
+    }
 
-	/**
-	 * If possible, makes an intelligent guess at the type of HTTP method being described.
-	 *
-	 * @param \ReflectionMethod $method
-	 * @return HttpMethod|null
-	 */
-	protected function guessHttpMethodFromMethod(\ReflectionMethod $method) {
+    /**
+     * If possible, makes an intelligent guess at the type of HTTP method being described.
+     *
+     * @param \ReflectionMethod $method
+     * @return HttpMethod|null
+     */
+    protected function guessHttpMethodFromMethod(\ReflectionMethod $method)
+    {
 
-		$methodName = $method->getShortName();
+        $methodName = $method->getShortName();
 
-		foreach ( HttpMethod::$allHttpMethods as $guess ) {
-			$guessFriendlyName = GameMaker::getAfterLastSlash($guess);
+        foreach (HttpMethod::$allHttpMethods as $guess) {
+            $guessFriendlyName = GameMaker::getAfterLastSlash($guess);
 
-			if ( substr(strtolower($methodName), 0, strlen($guessFriendlyName)) == strtolower($guessFriendlyName) ) {
+            if (substr(strtolower($methodName), 0, strlen($guessFriendlyName)) == strtolower($guessFriendlyName)) {
 
-				/** @var HttpMethod $httpMethod */
-				$httpMethod = new $guess();
+                /** @var HttpMethod $httpMethod */
+                $httpMethod = new $guess();
 
-				$methodLessHttpMethod = substr($methodName, strlen($guessFriendlyName));
+                $methodLessHttpMethod = substr($methodName, strlen($guessFriendlyName));
                 $methodLessHttpMethod = $this->escapeInputsInMethod($methodLessHttpMethod, $method);
-				$methodLessHttpMethod = lcfirst($methodLessHttpMethod);
+                $methodLessHttpMethod = lcfirst($methodLessHttpMethod);
 
-				$httpMethod->path = "/" . $this->functionToPathNamingConvention->convert($methodLessHttpMethod);
+                $httpMethod->path = "/" . $this->functionToPathNamingConvention->convert($methodLessHttpMethod);
 
-				return $httpMethod;
-			}
-		}
+                return $httpMethod;
+            }
+        }
 
-		return null;
-	}
+        return null;
+    }
 
     /**
      * Returns a version of $methodName with all occurrences of its inputs escaped as /{Input}/.
@@ -314,18 +327,19 @@ class GameMaker {
      * @param \ReflectionMethod $method
      * @return string
      */
-	protected function escapeInputsInMethod($methodName, \ReflectionMethod $method) {
+    protected function escapeInputsInMethod($methodName, \ReflectionMethod $method)
+    {
         $methodAnnotations = $this->annotationReader->getMethodAnnotations($method);
 
         foreach ($methodAnnotations as $key => $methodAnnotation) {
 
-            if ( $methodAnnotation instanceof Input && $methodAnnotation->typeHint != null ) {
+            if ($methodAnnotation instanceof Input && $methodAnnotation->typeHint != null) {
                 $typeHint = TypeHint::parseToInstanceOf(InputTypeHint::class, $methodAnnotation->typeHint, $this->annotationReader->getMethodImports($method));
 
-                if ( $typeHint != null ) {
+                if ($typeHint != null) {
                     $methodName = $this->escapeInputInMethodName($typeHint->variableName, $methodName);
                 }
-            } else if ( $methodAnnotation instanceof InputTypeHint ) {
+            } else if ($methodAnnotation instanceof InputTypeHint) {
                 $methodName = $this->escapeInputInMethodName($methodAnnotation->variableName, $methodName);
             }
         }
@@ -349,7 +363,8 @@ class GameMaker {
      * @param string $methodName
      * @return string
      */
-    protected function escapeInputInMethodName($input, $methodName) {
+    protected function escapeInputInMethodName($input, $methodName)
+    {
 
         return trim(preg_replace("/(?<!{)(" . preg_quote(ucfirst($input), '/') . ")(?!})/", '/{$1}/', $methodName), '/');
     }
@@ -359,17 +374,18 @@ class GameMaker {
      * @param Tag|null $controllerLevelTag
      * @return string[]
      */
-    protected function getTagsForMethod(\ReflectionMethod $method, Tag $controllerLevelTag = null) {
+    protected function getTagsForMethod(\ReflectionMethod $method, Tag $controllerLevelTag = null)
+    {
         $tags = [];
 
         /** @var Tag $methodLevelTag */
         $methodLevelTag = $this->annotationReader->getMethodAnnotation($method, Tag::class);
 
-        if ( $controllerLevelTag != null && ($methodLevelTag == null || !$methodLevelTag->ignoreParent) ) {
+        if ($controllerLevelTag != null && ($methodLevelTag == null || !$methodLevelTag->ignoreParent)) {
             $tags += $controllerLevelTag->tags;
         }
 
-        if ( $methodLevelTag ) {
+        if ($methodLevelTag) {
             $tags += $methodLevelTag->tags;
         }
 
@@ -385,7 +401,8 @@ class GameMaker {
      * @param ObjectInformation[] $parsedObjects
      * @return Output[]
      */
-    protected function getOutputsForMethod(\ReflectionMethod $method, HttpMethod $httpMethod, OutputWrapper $outputWrapperAnnotation = null, array &$parsedObjects = []) {
+    protected function getOutputsForMethod(\ReflectionMethod $method, HttpMethod $httpMethod, OutputWrapper $outputWrapperAnnotation = null, array &$parsedObjects = [])
+    {
         /** @var Output[] $outputs */
         $outputs = [];
 
@@ -398,10 +415,10 @@ class GameMaker {
 
             $output = null;
 
-            if ( $methodAnnotation instanceof Output ) {
+            if ($methodAnnotation instanceof Output) {
                 $output = $methodAnnotation;
 
-                if ( is_string($output->typeHint) ) {
+                if (is_string($output->typeHint)) {
                     // Check if type hint is a string. If it is, process it.
 
                     $output->typeHint = TypeHint::parseToInstanceOf(OutputTypeHint::class, $output->typeHint, $this->annotationReader->getMethodImports($method));
@@ -418,19 +435,19 @@ class GameMaker {
                         }
                     }
                 }
-            } else if ( $methodAnnotation instanceof OutputTypeHint ) {
+            } else if ($methodAnnotation instanceof OutputTypeHint) {
                 $output = new Output();
                 $output->typeHint = $methodAnnotation;
             }
 
-            if ( $output != null ) {
+            if ($output != null) {
                 // Fill in the blanks with rational defaults.
-                if ( $output->statusCode == null ) {
+                if ($output->statusCode == null) {
                     $output->statusCode = $output->typeHint == null || (count($output->typeHint->types) == 1 && $output->typeHint->types[0]->type == null) ? HttpStatusCodes::NO_CONTENT : $this->getDefaultHttpStatusCodeForHttpMethod($httpMethod);;
                 }
 
-                if ( $output->typeHint != null ) {
-                    foreach ( $output->typeHint->types as $outputType ) {
+                if ($output->typeHint != null) {
+                    foreach ($output->typeHint->types as $outputType) {
                         $outputTypeObjectOfInterest = $outputType->genericType ?: $outputType->type;
                         $this->parseObject($outputTypeObjectOfInterest, $parsedObjects);
                     }
@@ -439,22 +456,22 @@ class GameMaker {
                 $outputs[] = $output;
 
                 // Take either the first or the specified output for the wrapper.
-                if ( $outputForWrapper == null || $output->outputWrapperProvider ) {
+                if ($outputForWrapper == null || $output->outputWrapperProvider) {
                     $outputForWrapper = $output;
                 }
             }
         }
 
         // Get the specific output wrapper, if defined.
-        $outputWrapperAnnotation = $this->annotationReader->getMethodAnnotation($method, OutputWrapper::class) ? : $outputWrapperAnnotation;
+        $outputWrapperAnnotation = $this->annotationReader->getMethodAnnotation($method, OutputWrapper::class) ?: $outputWrapperAnnotation;
 
         // Swap with defined output wrapper, if appropriate.
-        if ( $outputForWrapper != null && $outputWrapperAnnotation != null && $this->annotationReader->getMethodAnnotation($method, IgnoreOutputWrapper::class) == null ) {
+        if ($outputForWrapper != null && $outputWrapperAnnotation != null && $this->annotationReader->getMethodAnnotation($method, IgnoreOutputWrapper::class) == null) {
             // Create a unique name for this type of output wrapper for the specified type.
             $outputWrapperAnnotation->class = ltrim($outputWrapperAnnotation->class, '\\');
             $outputWrapperUniqueNameForType = $outputWrapperAnnotation->class . "With" . ucfirst($outputForWrapper->typeHint->types[0]->type) . ($outputForWrapper->typeHint->types[0]->genericType ? ("Of" . ucfirst($outputForWrapper->typeHint->types[0]->genericType) . "s") : "");
 
-            if ( !array_key_exists($outputWrapperUniqueNameForType, $parsedObjects) ) {
+            if (!array_key_exists($outputWrapperUniqueNameForType, $parsedObjects)) {
                 $this->parseObject($outputWrapperAnnotation->class, $parsedObjects);
 
                 $genericOutputWrapperParsedObject = $parsedObjects[$outputWrapperAnnotation->class];
@@ -464,8 +481,8 @@ class GameMaker {
             }
 
             // And swap with the original output.
-            foreach ( $outputs as $key => $output ) {
-                if ( $output == $outputForWrapper ) {
+            foreach ($outputs as $key => $output) {
+                if ($output == $outputForWrapper) {
                     $wrappedOutputType = new Type();
                     $wrappedOutputType->type = $outputWrapperUniqueNameForType;
 
@@ -490,22 +507,23 @@ class GameMaker {
      * @param OutputTypeHint $typeHint
      * @return ObjectInformation
      */
-    protected function cloneOutputWrapperAndSwapPropertyTypeHint(ObjectInformation $genericOutputWrapper, $uniqueName, $propertyNameToSwap, OutputTypeHint $typeHint) {
+    protected function cloneOutputWrapperAndSwapPropertyTypeHint(ObjectInformation $genericOutputWrapper, $uniqueName, $propertyNameToSwap, OutputTypeHint $typeHint)
+    {
         $clonedOutputWrapper = new ObjectInformation($genericOutputWrapper->class, [], []);
         $clonedOutputWrapper->uniqueName = $uniqueName;
 
-        foreach ( $genericOutputWrapper->properties as $key => $property ) {
+        foreach ($genericOutputWrapper->properties as $key => $property) {
             $clonedOutputWrapper->properties[$key] = clone $property;
 
-            if ( $property->variableName == $propertyNameToSwap ) {
+            if ($property->variableName == $propertyNameToSwap) {
                 $clonedOutputWrapper->properties[$key]->types = $typeHint->types;
             }
         }
 
-        foreach ( $genericOutputWrapper->specificProperties as $key => $property ) {
+        foreach ($genericOutputWrapper->specificProperties as $key => $property) {
             $clonedOutputWrapper->specificProperties[$key] = clone $property;
 
-            if ( $property->variableName == $propertyNameToSwap ) {
+            if ($property->variableName == $propertyNameToSwap) {
                 $clonedOutputWrapper->properties[$key]->types = $typeHint->types;
             }
         }
@@ -520,21 +538,22 @@ class GameMaker {
      * @param array $parsedObjects
      * @param int $depth
      */
-    protected function parseObject ( $class, array &$parsedObjects, $depth = 1 ) {
-        if ( class_exists($class) && !array_key_exists($class, $parsedObjects)) {
+    protected function parseObject($class, array &$parsedObjects, $depth = 1)
+    {
+        if (class_exists($class) && !array_key_exists($class, $parsedObjects)) {
             $parsedObject = new ObjectInformation($class, [], []);
             $reflectionClass = new \ReflectionClass($class);
 
-            foreach ( $reflectionClass->getProperties(\ReflectionProperty::IS_PUBLIC) as $reflectedProperty ) {
+            foreach ($reflectionClass->getProperties(\ReflectionProperty::IS_PUBLIC) as $reflectedProperty) {
                 foreach ($this->annotationReader->getPropertyAnnotations($reflectedProperty) as $propertyAnnotation) {
                     if ($propertyAnnotation instanceof TypeHint) {
-                       $parsedObject->properties[] = $propertyAnnotation;
-                       if ( $reflectedProperty->getDeclaringClass() == $reflectionClass ) {
-                           $parsedObject->specificProperties[] = $propertyAnnotation;
-                       }
+                        $parsedObject->properties[] = $propertyAnnotation;
+                        if ($reflectedProperty->getDeclaringClass() == $reflectionClass) {
+                            $parsedObject->specificProperties[] = $propertyAnnotation;
+                        }
 
-                       // Recurse into types that represent objects and ensure they're in the graph.
-                        if ( $depth <= $this->maxRecursionDepth ) {
+                        // Recurse into types that represent objects and ensure they're in the graph.
+                        if ($depth <= $this->maxRecursionDepth) {
                             foreach ($propertyAnnotation->types as $type) {
                                 $classOfInterest = $type->genericType ?: $type->type;
 
@@ -550,29 +569,30 @@ class GameMaker {
         }
     }
 
-	/**
+    /**
      * Retrieves the inputs for the given method.
      *
-	 * @param \ReflectionMethod $method
-	 * @param HttpMethod $httpMethod
-	 * @return Annotations\Input[]
-	 */
-	protected function getInputsForMethod(\ReflectionMethod $method, HttpMethod $httpMethod) {
-		/** @var Input[] $inputs */
-		$inputs = [];
+     * @param \ReflectionMethod $method
+     * @param HttpMethod $httpMethod
+     * @return Annotations\Input[]
+     */
+    protected function getInputsForMethod(\ReflectionMethod $method, HttpMethod $httpMethod)
+    {
+        /** @var Input[] $inputs */
+        $inputs = [];
 
-		$methodAnnotations = $this->annotationReader->getMethodAnnotations($method);
+        $methodAnnotations = $this->annotationReader->getMethodAnnotations($method);
 
-		foreach ($methodAnnotations as $key => &$methodAnnotation) {
-			$input = null;
+        foreach ($methodAnnotations as $key => &$methodAnnotation) {
+            $input = null;
 
-			if ( $methodAnnotation instanceof Input ) {
-				$input = $methodAnnotation;
+            if ($methodAnnotation instanceof Input) {
+                $input = $methodAnnotation;
 
-				if ( is_string($input->typeHint) ) {
-					// Check if type hint is a string. If it is, process it.
-					$input->typeHint = TypeHint::parseToInstanceOf(InputTypeHint::class, $input->typeHint, $this->annotationReader->getMethodImports($method));
-				} else {
+                if (is_string($input->typeHint)) {
+                    // Check if type hint is a string. If it is, process it.
+                    $input->typeHint = TypeHint::parseToInstanceOf(InputTypeHint::class, $input->typeHint, $this->annotationReader->getMethodImports($method));
+                } else {
                     for ($i = $key + 1; $i <= key(array_slice($methodAnnotations, -1, 1, true)); $i++) {
                         // Check if the input annotation is followed by a type hint.
                         // If it is, merge them.
@@ -585,31 +605,31 @@ class GameMaker {
                         }
                     }
                 }
-			} else if ( $methodAnnotation instanceof InputTypeHint ) {
-				$input = new Input();
-				$input->typeHint = $methodAnnotation;
-			}
+            } else if ($methodAnnotation instanceof InputTypeHint) {
+                $input = new Input();
+                $input->typeHint = $methodAnnotation;
+            }
 
-			if ( $input != null ) {
-				// Fill in the blanks with rational defaults.
+            if ($input != null) {
+                // Fill in the blanks with rational defaults.
 
-				if ($input->name == null) {
-					$input->name = $this->variableNameToInputNamingConvention->convert($input->typeHint->variableName);
-				}
+                if ($input->name == null) {
+                    $input->name = $this->variableNameToInputNamingConvention->convert($input->typeHint->variableName);
+                }
 
-				if ( $input->variableName == null ) {
-					$input->variableName = $input->typeHint->variableName;
-				}
+                if ($input->variableName == null) {
+                    $input->variableName = $input->typeHint->variableName;
+                }
 
-				if ($input->in == null) {
-					if ( $this->doesVariableExistInPath($input->name, $httpMethod) ) {
-						$input->in = "PATH";
-					} else {
-						$input->in = $this->getDefaultLocationForHttpMethod($httpMethod);
-					}
-				}
+                if ($input->in == null) {
+                    if ($this->doesVariableExistInPath($input->name, $httpMethod)) {
+                        $input->in = "PATH";
+                    } else {
+                        $input->in = $this->getDefaultLocationForHttpMethod($httpMethod);
+                    }
+                }
 
-				if ( $input->arrayFormat == null ) {
+                if ($input->arrayFormat == null) {
                     foreach ($input->typeHint->types as $type) {
                         if ($type == TypeHint::ARRAY_TYPE) {
                             $input->arrayFormat = $this->defaultArrayFormat;
@@ -618,12 +638,12 @@ class GameMaker {
                     }
                 }
 
-				$inputs[] = $input;
-			}
-		}
+                $inputs[] = $input;
+            }
+        }
 
-		return $inputs;
-	}
+        return $inputs;
+    }
 
     /**
      * Retrieve the default HTTP status code for the given HTTP method through some opinionated but sane defaults.
@@ -631,7 +651,8 @@ class GameMaker {
      * @param HttpMethod $httpMethod
      * @return int
      */
-	protected function getDefaultHttpStatusCodeForHttpMethod (HttpMethod $httpMethod) {
+    protected function getDefaultHttpStatusCodeForHttpMethod(HttpMethod $httpMethod)
+    {
         switch ($httpMethod) {
             case POST::class:
             case PUT::class:
@@ -652,50 +673,54 @@ class GameMaker {
      * @param HttpMethod $httpMethod
      * @return string
      */
-	protected function getDefaultLocationForHttpMethod (HttpMethod $httpMethod ) {
-		switch ($httpMethod) {
-			case POST::class:
-			case PUT::class:
-			case PATCH::class:
-				return "FORM";
-			case GET::class:
-			case DELETE::class:
-			case HEAD::class:
-			default:
-				return "QUERY";
-		}
-	}
+    protected function getDefaultLocationForHttpMethod(HttpMethod $httpMethod)
+    {
+        switch ($httpMethod) {
+            case POST::class:
+            case PUT::class:
+            case PATCH::class:
+                return "FORM";
+            case GET::class:
+            case DELETE::class:
+            case HEAD::class:
+            default:
+                return "QUERY";
+        }
+    }
 
-	/**
-	 * Set the AnnotationReader.
-	 *
-	 * @see http://docs.doctrine-project.org/projects/doctrine-common/en/latest/reference/annotations.html
-	 * @param CachedReader $annotationReader
-	 */
-	public function setAnnotationReader($annotationReader) {
+    /**
+     * Set the AnnotationReader.
+     *
+     * @see http://docs.doctrine-project.org/projects/doctrine-common/en/latest/reference/annotations.html
+     * @param CachedReader $annotationReader
+     */
+    public function setAnnotationReader($annotationReader)
+    {
 
-		$this->annotationReader = $annotationReader;
-	}
+        $this->annotationReader = $annotationReader;
+    }
 
-	/**
-	 * Set the naming convention to use when guessing the path for a function name.
-	 *
-	 * @param NamingConvention $functionToPathNamingConvention
-	 */
-	public function setFunctionToPathNamingConvention($functionToPathNamingConvention) {
+    /**
+     * Set the naming convention to use when guessing the path for a function name.
+     *
+     * @param NamingConvention $functionToPathNamingConvention
+     */
+    public function setFunctionToPathNamingConvention($functionToPathNamingConvention)
+    {
 
-		$this->functionToPathNamingConvention = $functionToPathNamingConvention;
-	}
+        $this->functionToPathNamingConvention = $functionToPathNamingConvention;
+    }
 
-	/**
-	 * Set the naming convention to use when guessing the input name for a given variable name.
-	 *
-	 * @param NamingConvention $variableNameToInputNamingConvention
-	 */
-	public function setVariableNameToInputNamingConvention($variableNameToInputNamingConvention) {
+    /**
+     * Set the naming convention to use when guessing the input name for a given variable name.
+     *
+     * @param NamingConvention $variableNameToInputNamingConvention
+     */
+    public function setVariableNameToInputNamingConvention($variableNameToInputNamingConvention)
+    {
 
-		$this->variableNameToInputNamingConvention = $variableNameToInputNamingConvention;
-	}
+        $this->variableNameToInputNamingConvention = $variableNameToInputNamingConvention;
+    }
 
     /**
      * @param int $maxRecursionDepth
@@ -713,43 +738,49 @@ class GameMaker {
         $this->defaultArrayFormat = $defaultArrayFormat;
     }
 
-    protected function doesVariableExistInPath($variable, HttpMethod $httpMethod) {
+    protected function doesVariableExistInPath($variable, HttpMethod $httpMethod)
+    {
 
         return strpos($httpMethod->path, "{" . $variable . "}") !== false;
     }
 
-    public static function getAfterLastSlash($string) {
+    public static function getAfterLastSlash($string)
+    {
 
         return strpos($string, '\\') === false ? $string : substr($string, strrpos($string, '\\') + 1);
     }
 
-	public static function getProjectRoot() {
+    public static function getProjectRoot()
+    {
 
-		return static::getSrcRoot() . "/..";
-	}
+        return static::getSrcRoot() . "/..";
+    }
 
-	public static function getSrcRoot() {
+    public static function getSrcRoot()
+    {
 
-		$path = dirname(__FILE__);
+        $path = dirname(__FILE__);
 
-		return $path . "/../..";
-	}
+        return $path . "/../..";
+    }
 
-	public static function getVendorRoot() {
+    public static function getVendorRoot()
+    {
 
-		return static::getProjectRoot() . "/vendor";
-	}
+        return static::getProjectRoot() . "/vendor";
+    }
 
     /**
      * @param ControllerInformation[] $controllers
      * @return ObjectInformation[]
      */
-    public static function getUniqueObjectInControllers(array $controllers) {
+    public static function getUniqueObjectInControllers(array $controllers)
+    {
         /** @var ObjectInformation[] $objects */
         $objects = [];
 
-        foreach ( $controllers as $controller ) {
-            foreach ( $controller->parsedObjects as $object ) {
+        foreach ($controllers as $controller) {
+            foreach ($controller->parsedObjects as $object) {
                 $objects[$object->uniqueName] = $object;
             }
         }
@@ -762,7 +793,8 @@ class GameMaker {
      *
      * @return ObjectInformation[]
      */
-    public function getUniqueObjects() {
+    public function getUniqueObjects()
+    {
 
         return GameMaker::getUniqueObjectInControllers($this->parsedControllers);
     }
@@ -781,14 +813,15 @@ class GameMaker {
      * @param $type
      * @return string
      */
-    public function getActualClassForType($type) {
-        if ( class_exists($type) ) {
+    public function getActualClassForType($type)
+    {
+        if (class_exists($type)) {
 
             return $type;
         }
 
-        foreach ( $this->getUniqueObjects() as $object ) {
-            if ( $object->uniqueName == $type ) {
+        foreach ($this->getUniqueObjects() as $object) {
+            if ($object->uniqueName == $type) {
 
                 return $object->class;
             }
