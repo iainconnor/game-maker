@@ -127,6 +127,26 @@ class GameMaker
         );
     }
 
+    public static function getSrcRoot()
+    {
+
+        $path = dirname(__FILE__);
+
+        return $path . "/../..";
+    }
+
+    public static function getVendorRoot()
+    {
+
+        return static::getProjectRoot() . "/vendor";
+    }
+
+    public static function getProjectRoot()
+    {
+
+        return static::getSrcRoot() . "/..";
+    }
+
     /**
      * Retrieve all endpoints and objects defined in the specified path.
      *
@@ -210,7 +230,7 @@ class GameMaker
 
         foreach ($reflectedClass->getMethods(\ReflectionMethod::IS_PUBLIC) as $reflectionMethod) {
 
-            if ($this->annotationReader->getMethodAnnotation($reflectionMethod, IgnoreEndpoint::class) === null) {
+            if (!$this->isMagicMethod($reflectionMethod) && !$reflectionMethod->isInternal() && !$reflectionMethod->isConstructor() && $this->annotationReader->getMethodAnnotation($reflectionMethod, IgnoreEndpoint::class) === null) {
                 $httpMethod = $this->getFullHttpMethod($reflectionMethod, $apiAnnotation, $controllerAnnotation, $whitelistAnnotation !== null);
 
                 if ($httpMethod !== null) {
@@ -242,6 +262,17 @@ class GameMaker
         $this->parsedControllers[$class] = $controller;
 
         return $controller;
+    }
+
+    /**
+     * Returns whether the provided method is magic.
+     *
+     * @param \ReflectionMethod $reflectionMethod
+     * @return bool
+     */
+    protected function isMagicMethod(\ReflectionMethod $reflectionMethod)
+    {
+        return strpos($reflectionMethod->getName(), '__') === 0;
     }
 
     /**
@@ -319,6 +350,12 @@ class GameMaker
         return null;
     }
 
+    public static function getAfterLastSlash($string)
+    {
+
+        return strpos($string, '\\') === false ? $string : substr($string, strrpos($string, '\\') + 1);
+    }
+
     /**
      * Returns a version of $methodName with all occurrences of its inputs escaped as /{Input}/.
      * Used for guessing path names based on method names.
@@ -370,26 +407,106 @@ class GameMaker
     }
 
     /**
+     * Retrieves the inputs for the given method.
+     *
      * @param \ReflectionMethod $method
-     * @param Tag|null $controllerLevelTag
-     * @return string[]
+     * @param HttpMethod $httpMethod
+     * @return Annotations\Input[]
      */
-    protected function getTagsForMethod(\ReflectionMethod $method, Tag $controllerLevelTag = null)
+    protected function getInputsForMethod(\ReflectionMethod $method, HttpMethod $httpMethod)
     {
-        $tags = [];
+        /** @var Input[] $inputs */
+        $inputs = [];
 
-        /** @var Tag $methodLevelTag */
-        $methodLevelTag = $this->annotationReader->getMethodAnnotation($method, Tag::class);
+        $methodAnnotations = $this->annotationReader->getMethodAnnotations($method);
 
-        if ($controllerLevelTag != null && ($methodLevelTag == null || !$methodLevelTag->ignoreParent)) {
-            $tags += $controllerLevelTag->tags;
+        foreach ($methodAnnotations as $key => &$methodAnnotation) {
+            $input = null;
+
+            if ($methodAnnotation instanceof Input) {
+                $input = $methodAnnotation;
+
+                if (is_string($input->typeHint)) {
+                    // Check if type hint is a string. If it is, process it.
+                    $input->typeHint = TypeHint::parseToInstanceOf(InputTypeHint::class, $input->typeHint, $this->annotationReader->getMethodImports($method));
+                } else {
+                    for ($i = $key + 1; $i <= key(array_slice($methodAnnotations, -1, 1, true)); $i++) {
+                        // Check if the input annotation is followed by a type hint.
+                        // If it is, merge them.
+                        if ($methodAnnotations[$i] instanceof InputTypeHint) {
+                            $input->typeHint = $methodAnnotations[$i];
+                            unset($methodAnnotations[$i]);
+                            break;
+                        } else if ($methodAnnotations[$i] instanceof Input) {
+                            break;
+                        }
+                    }
+                }
+            } else if ($methodAnnotation instanceof InputTypeHint) {
+                $input = new Input();
+                $input->typeHint = $methodAnnotation;
+            }
+
+            if ($input != null) {
+                // Fill in the blanks with rational defaults.
+
+                if ($input->name == null) {
+                    $input->name = $this->variableNameToInputNamingConvention->convert($input->typeHint->variableName);
+                }
+
+                if ($input->variableName == null) {
+                    $input->variableName = $input->typeHint->variableName;
+                }
+
+                if ($input->in == null) {
+                    if ($this->doesVariableExistInPath($input->name, $httpMethod)) {
+                        $input->in = "PATH";
+                    } else {
+                        $input->in = $this->getDefaultLocationForHttpMethod($httpMethod);
+                    }
+                }
+
+                if ($input->arrayFormat == null) {
+                    foreach ($input->typeHint->types as $type) {
+                        if ($type == TypeHint::ARRAY_TYPE) {
+                            $input->arrayFormat = $this->defaultArrayFormat;
+                            break;
+                        }
+                    }
+                }
+
+                $inputs[] = $input;
+            }
         }
 
-        if ($methodLevelTag) {
-            $tags += $methodLevelTag->tags;
-        }
+        return $inputs;
+    }
 
-        return $tags;
+    protected function doesVariableExistInPath($variable, HttpMethod $httpMethod)
+    {
+
+        return strpos($httpMethod->path, "{" . $variable . "}") !== false;
+    }
+
+    /**
+     * Retrieve the default input location for the given HTTP method through some opinionated but sane defaults.
+     *
+     * @param HttpMethod $httpMethod
+     * @return string
+     */
+    protected function getDefaultLocationForHttpMethod(HttpMethod $httpMethod)
+    {
+        switch ($httpMethod) {
+            case POST::class:
+            case PUT::class:
+            case PATCH::class:
+                return "FORM";
+            case GET::class:
+            case DELETE::class:
+            case HEAD::class:
+            default:
+                return "QUERY";
+        }
     }
 
     /**
@@ -498,37 +615,25 @@ class GameMaker
     }
 
     /**
-     * Clones the specified generic version of an Outout Wrapper, swapping the type hint for the specified property with
-     * the specified value.
+     * Retrieve the default HTTP status code for the given HTTP method through some opinionated but sane defaults.
      *
-     * @param ObjectInformation $genericOutputWrapper
-     * @param $uniqueName
-     * @param $propertyNameToSwap
-     * @param OutputTypeHint $typeHint
-     * @return ObjectInformation
+     * @param HttpMethod $httpMethod
+     * @return int
      */
-    protected function cloneOutputWrapperAndSwapPropertyTypeHint(ObjectInformation $genericOutputWrapper, $uniqueName, $propertyNameToSwap, OutputTypeHint $typeHint)
+    protected function getDefaultHttpStatusCodeForHttpMethod(HttpMethod $httpMethod)
     {
-        $clonedOutputWrapper = new ObjectInformation($genericOutputWrapper->class, [], []);
-        $clonedOutputWrapper->uniqueName = $uniqueName;
-
-        foreach ($genericOutputWrapper->properties as $key => $property) {
-            $clonedOutputWrapper->properties[$key] = clone $property;
-
-            if ($property->variableName == $propertyNameToSwap) {
-                $clonedOutputWrapper->properties[$key]->types = $typeHint->types;
-            }
+        switch ($httpMethod) {
+            case POST::class:
+            case PUT::class:
+            case PATCH::class:
+                return HttpStatusCodes::ACCEPTED;
+            case DELETE::class:
+                return HttpStatusCodes::NO_CONTENT;
+            case GET::class:
+            case HEAD::class:
+            default:
+                return HttpStatusCodes::OK;
         }
-
-        foreach ($genericOutputWrapper->specificProperties as $key => $property) {
-            $clonedOutputWrapper->specificProperties[$key] = clone $property;
-
-            if ($property->variableName == $propertyNameToSwap) {
-                $clonedOutputWrapper->properties[$key]->types = $typeHint->types;
-            }
-        }
-
-        return $clonedOutputWrapper;
     }
 
     /**
@@ -570,122 +675,60 @@ class GameMaker
     }
 
     /**
-     * Retrieves the inputs for the given method.
+     * Clones the specified generic version of an Outout Wrapper, swapping the type hint for the specified property with
+     * the specified value.
      *
+     * @param ObjectInformation $genericOutputWrapper
+     * @param $uniqueName
+     * @param $propertyNameToSwap
+     * @param OutputTypeHint $typeHint
+     * @return ObjectInformation
+     */
+    protected function cloneOutputWrapperAndSwapPropertyTypeHint(ObjectInformation $genericOutputWrapper, $uniqueName, $propertyNameToSwap, OutputTypeHint $typeHint)
+    {
+        $clonedOutputWrapper = new ObjectInformation($genericOutputWrapper->class, [], []);
+        $clonedOutputWrapper->uniqueName = $uniqueName;
+
+        foreach ($genericOutputWrapper->properties as $key => $property) {
+            $clonedOutputWrapper->properties[$key] = clone $property;
+
+            if ($property->variableName == $propertyNameToSwap) {
+                $clonedOutputWrapper->properties[$key]->types = $typeHint->types;
+            }
+        }
+
+        foreach ($genericOutputWrapper->specificProperties as $key => $property) {
+            $clonedOutputWrapper->specificProperties[$key] = clone $property;
+
+            if ($property->variableName == $propertyNameToSwap) {
+                $clonedOutputWrapper->properties[$key]->types = $typeHint->types;
+            }
+        }
+
+        return $clonedOutputWrapper;
+    }
+
+    /**
      * @param \ReflectionMethod $method
-     * @param HttpMethod $httpMethod
-     * @return Annotations\Input[]
+     * @param Tag|null $controllerLevelTag
+     * @return string[]
      */
-    protected function getInputsForMethod(\ReflectionMethod $method, HttpMethod $httpMethod)
+    protected function getTagsForMethod(\ReflectionMethod $method, Tag $controllerLevelTag = null)
     {
-        /** @var Input[] $inputs */
-        $inputs = [];
+        $tags = [];
 
-        $methodAnnotations = $this->annotationReader->getMethodAnnotations($method);
+        /** @var Tag $methodLevelTag */
+        $methodLevelTag = $this->annotationReader->getMethodAnnotation($method, Tag::class);
 
-        foreach ($methodAnnotations as $key => &$methodAnnotation) {
-            $input = null;
-
-            if ($methodAnnotation instanceof Input) {
-                $input = $methodAnnotation;
-
-                if (is_string($input->typeHint)) {
-                    // Check if type hint is a string. If it is, process it.
-                    $input->typeHint = TypeHint::parseToInstanceOf(InputTypeHint::class, $input->typeHint, $this->annotationReader->getMethodImports($method));
-                } else {
-                    for ($i = $key + 1; $i <= key(array_slice($methodAnnotations, -1, 1, true)); $i++) {
-                        // Check if the input annotation is followed by a type hint.
-                        // If it is, merge them.
-                        if ($methodAnnotations[$i] instanceof InputTypeHint) {
-                            $input->typeHint = $methodAnnotations[$i];
-                            unset($methodAnnotations[$i]);
-                            break;
-                        } else if ($methodAnnotations[$i] instanceof Input) {
-                            break;
-                        }
-                    }
-                }
-            } else if ($methodAnnotation instanceof InputTypeHint) {
-                $input = new Input();
-                $input->typeHint = $methodAnnotation;
-            }
-
-            if ($input != null) {
-                // Fill in the blanks with rational defaults.
-
-                if ($input->name == null) {
-                    $input->name = $this->variableNameToInputNamingConvention->convert($input->typeHint->variableName);
-                }
-
-                if ($input->variableName == null) {
-                    $input->variableName = $input->typeHint->variableName;
-                }
-
-                if ($input->in == null) {
-                    if ($this->doesVariableExistInPath($input->name, $httpMethod)) {
-                        $input->in = "PATH";
-                    } else {
-                        $input->in = $this->getDefaultLocationForHttpMethod($httpMethod);
-                    }
-                }
-
-                if ($input->arrayFormat == null) {
-                    foreach ($input->typeHint->types as $type) {
-                        if ($type == TypeHint::ARRAY_TYPE) {
-                            $input->arrayFormat = $this->defaultArrayFormat;
-                            break;
-                        }
-                    }
-                }
-
-                $inputs[] = $input;
-            }
+        if ($controllerLevelTag != null && ($methodLevelTag == null || !$methodLevelTag->ignoreParent)) {
+            $tags += $controllerLevelTag->tags;
         }
 
-        return $inputs;
-    }
-
-    /**
-     * Retrieve the default HTTP status code for the given HTTP method through some opinionated but sane defaults.
-     *
-     * @param HttpMethod $httpMethod
-     * @return int
-     */
-    protected function getDefaultHttpStatusCodeForHttpMethod(HttpMethod $httpMethod)
-    {
-        switch ($httpMethod) {
-            case POST::class:
-            case PUT::class:
-            case PATCH::class:
-                return HttpStatusCodes::ACCEPTED;
-            case DELETE::class:
-                return HttpStatusCodes::NO_CONTENT;
-            case GET::class:
-            case HEAD::class:
-            default:
-                return HttpStatusCodes::OK;
+        if ($methodLevelTag) {
+            $tags += $methodLevelTag->tags;
         }
-    }
 
-    /**
-     * Retrieve the default input location for the given HTTP method through some opinionated but sane defaults.
-     *
-     * @param HttpMethod $httpMethod
-     * @return string
-     */
-    protected function getDefaultLocationForHttpMethod(HttpMethod $httpMethod)
-    {
-        switch ($httpMethod) {
-            case POST::class:
-            case PUT::class:
-            case PATCH::class:
-                return "FORM";
-            case GET::class:
-            case DELETE::class:
-            case HEAD::class:
-            default:
-                return "QUERY";
-        }
+        return $tags;
     }
 
     /**
@@ -738,67 +781,6 @@ class GameMaker
         $this->defaultArrayFormat = $defaultArrayFormat;
     }
 
-    protected function doesVariableExistInPath($variable, HttpMethod $httpMethod)
-    {
-
-        return strpos($httpMethod->path, "{" . $variable . "}") !== false;
-    }
-
-    public static function getAfterLastSlash($string)
-    {
-
-        return strpos($string, '\\') === false ? $string : substr($string, strrpos($string, '\\') + 1);
-    }
-
-    public static function getProjectRoot()
-    {
-
-        return static::getSrcRoot() . "/..";
-    }
-
-    public static function getSrcRoot()
-    {
-
-        $path = dirname(__FILE__);
-
-        return $path . "/../..";
-    }
-
-    public static function getVendorRoot()
-    {
-
-        return static::getProjectRoot() . "/vendor";
-    }
-
-    /**
-     * @param ControllerInformation[] $controllers
-     * @return ObjectInformation[]
-     */
-    public static function getUniqueObjectInControllers(array $controllers)
-    {
-        /** @var ObjectInformation[] $objects */
-        $objects = [];
-
-        foreach ($controllers as $controller) {
-            foreach ($controller->parsedObjects as $object) {
-                $objects[$object->uniqueName] = $object;
-            }
-        }
-
-        return array_values($objects);
-    }
-
-    /**
-     * Retrieves the unique set of objects in the currently parsed controllers.
-     *
-     * @return ObjectInformation[]
-     */
-    public function getUniqueObjects()
-    {
-
-        return GameMaker::getUniqueObjectInControllers($this->parsedControllers);
-    }
-
     /**
      * @return ControllerInformation[]
      */
@@ -828,5 +810,34 @@ class GameMaker
         }
 
         return $type;
+    }
+
+    /**
+     * Retrieves the unique set of objects in the currently parsed controllers.
+     *
+     * @return ObjectInformation[]
+     */
+    public function getUniqueObjects()
+    {
+
+        return GameMaker::getUniqueObjectInControllers($this->parsedControllers);
+    }
+
+    /**
+     * @param ControllerInformation[] $controllers
+     * @return ObjectInformation[]
+     */
+    public static function getUniqueObjectInControllers(array $controllers)
+    {
+        /** @var ObjectInformation[] $objects */
+        $objects = [];
+
+        foreach ($controllers as $controller) {
+            foreach ($controller->parsedObjects as $object) {
+                $objects[$object->uniqueName] = $object;
+            }
+        }
+
+        return array_values($objects);
     }
 }
