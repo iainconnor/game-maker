@@ -393,7 +393,7 @@ class GameMaker
     }
 
     /**
-     * Returns a version of $methodName with all occurrences of $input escaped as /{Input}/.
+     * Returns a version of $methodName with all occurrences of $input escaped as /{input}/.
      * Used for guessing path names based on method names.
      *
      * @param string $input
@@ -403,7 +403,9 @@ class GameMaker
     protected function escapeInputInMethodName($input, $methodName)
     {
 
-        return trim(preg_replace("/(?<!{)(" . preg_quote(ucfirst($input), '/') . ")(?!})/", '/{$1}/', $methodName), '/');
+        return trim(preg_replace_callback("/(?<!{)(" . preg_quote(ucfirst($input), '/') . ")(?!})/", function ($matches) {
+            return '{' . strtolower($matches[1]) . '}';
+        }, $methodName), '/');
     }
 
     /**
