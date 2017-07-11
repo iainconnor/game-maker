@@ -404,7 +404,7 @@ class GameMaker
     {
 
         return trim(preg_replace_callback("/(?<!{)(" . preg_quote(ucfirst($input), '/') . ")(?!})/", function ($matches) {
-            return '{' . strtolower($matches[1]) . '}';
+            return '/{' . strtolower($matches[1]) . '}/';
         }, $methodName), '/');
     }
 
