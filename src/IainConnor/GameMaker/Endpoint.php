@@ -30,4 +30,7 @@ class Endpoint
 
     /** @var string[] */
     public $tags;
+
+    /** @var string[] */
+    public $middleware;
 }

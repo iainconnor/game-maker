@@ -22,6 +22,7 @@ use IainConnor\GameMaker\Annotations\HttpMethod;
 use IainConnor\GameMaker\Annotations\IgnoreEndpoint;
 use IainConnor\GameMaker\Annotations\IgnoreOutputWrapper;
 use IainConnor\GameMaker\Annotations\Input;
+use IainConnor\GameMaker\Annotations\Middleware;
 use IainConnor\GameMaker\Annotations\Output;
 use IainConnor\GameMaker\Annotations\OutputWrapper;
 use IainConnor\GameMaker\Annotations\PATCH;
@@ -226,6 +227,10 @@ class GameMaker
         /** @var Tag|null $tagAnnotation */
         $tagAnnotation = $this->annotationReader->getClassAnnotation($reflectedClass, Tag::class);
 
+
+        /** @var Middleware|null $middlewareAnnotation */
+        $middlewareAnnotation = $this->annotationReader->getClassAnnotation($reflectedClass, Middleware::class);
+
         $whitelistAnnotation = $this->annotationReader->getClassAnnotation($reflectedClass, Whitelist::class);
 
         foreach ($reflectedClass->getMethods(\ReflectionMethod::IS_PUBLIC) as $reflectionMethod) {
@@ -236,7 +241,11 @@ class GameMaker
                 if ($httpMethod !== null) {
                     $endpoint = new Endpoint();
 
+                    /** @var Middleware|null $endpointMiddlewareAnnotation */
+                    $endpointMiddlewareAnnotation = $this->annotationReader->getMethodAnnotation($reflectionMethod, Middleware::class);
+
                     $endpoint->method = $reflectionMethod->getName();
+                    $endpoint->middleware = is_null($endpointMiddlewareAnnotation) || !is_array($endpointMiddlewareAnnotation->names) ? [] : $endpointMiddlewareAnnotation->names;
                     $endpoint->httpMethod = $httpMethod;
                     $endpoint->inputs = $this->getInputsForMethod($reflectionMethod, $httpMethod);
                     $endpoint->outputs = $this->getOutputsForMethod($reflectionMethod, $httpMethod, $outputWrapperAnnotation, $parsedObjects);
@@ -257,7 +266,7 @@ class GameMaker
             }
         }
 
-        $controller = new ControllerInformation($class, $endpoints, array_values($parsedObjects));
+        $controller = new ControllerInformation($class, is_null($middlewareAnnotation) || !is_array($middlewareAnnotation->names) ? [] : $middlewareAnnotation->names, $endpoints, array_values($parsedObjects));
 
         $this->parsedControllers[$class] = $controller;
 
