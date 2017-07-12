@@ -165,8 +165,12 @@ class Swagger2 extends Processor
 
         $this->alphabetizeControllers($controllers);
 
+        $longestCommonControllerPrefix = $this->getLongestCommonPrefix(array_map(function (ControllerInformation $controllerInformation) {
+            return $controllerInformation->class;
+        }, $controllers), '\\');
+
         foreach ($controllers as $controller) {
-            $json = array_merge($json, $this->generateJsonForController($controller, $longestCommonNamePrefix, $basePath));
+            $json = array_merge($json, $this->generateJsonForController($controller, $longestCommonNamePrefix, $longestCommonControllerPrefix, $basePath));
         }
 
         return $json;
@@ -175,10 +179,11 @@ class Swagger2 extends Processor
     /**
      * @param ControllerInformation $controller
      * @param $longestCommonNamePrefix
+     * @param $longestCommonControllersPrefix
      * @param string|null $basePath
      * @return array
      */
-    protected function generateJsonForController(ControllerInformation $controller, $longestCommonNamePrefix, $basePath = null)
+    protected function generateJsonForController(ControllerInformation $controller, $longestCommonNamePrefix, $longestCommonControllersPrefix, $basePath = null)
     {
         $json = [];
 
@@ -188,7 +193,7 @@ class Swagger2 extends Processor
 
                 $json[$relativePath][strtolower(GameMaker::getAfterLastSlash(get_class($endpoint->httpMethod)))] = [
                     'description' => $endpoint->description,
-                    'operationId' => $endpoint->httpMethod->friendlyName ? (str_replace(' ', '', ucwords($endpoint->httpMethod->friendlyName))) : ($controller->class . "@" . $endpoint->method),
+                    'operationId' => $endpoint->httpMethod->friendlyName ? (str_replace(' ', '', ucwords($endpoint->httpMethod->friendlyName))) : (substr($controller->class, strlen($longestCommonControllersPrefix)) . "@" . $endpoint->method),
                     'parameters' => $this->generateJsonForParameters($endpoint->inputs, $longestCommonNamePrefix),
                     'responses' => $this->generateJsonForResponses($endpoint->outputs, $longestCommonNamePrefix),
                     'tags' => $this->generateJsonForTags($endpoint->tags)
@@ -363,7 +368,7 @@ class Swagger2 extends Processor
 
                 if ($type->type == TypeHint::ARRAY_TYPE) {
                     if (!$this->typeIsNull($type->genericType)) {
-                        if ($this->typeIsSimple($type->type)) {
+                        if ($this->typeIsSimple($type->genericType)) {
                             $schema['items']['type'] = $this->getSwaggerType($type->genericType, $longestCommonNamePrefix);
                         } else {
                             $schema['items']['$ref'] = $this->getSwaggerType($type->genericType, $longestCommonNamePrefix);
