@@ -9,17 +9,17 @@ use IainConnor\GameMaker\ObjectInformation;
 
 abstract class Processor
 {
-    /**
-     * @param ControllerInformation[] $controllers
-     * @return mixed
-     */
-    public abstract function processControllers(array $controllers);
-
     public function processController(ControllerInformation $controller)
     {
 
         return $this->processControllers([$controller]);
     }
+
+    /**
+     * @param ControllerInformation[] $controllers
+     * @return mixed
+     */
+    public abstract function processControllers(array $controllers);
 
     /**
      * @param ObjectInformation[] $objects
@@ -43,21 +43,24 @@ abstract class Processor
 
     /**
      * @param array $strings
-     * @return string|null
+     * @param string $terminatorCharacter
+     * @return null|string
      */
-    protected function getLongestCommonPrefix(array $strings)
+    protected function getLongestCommonPrefix(array $strings, $terminatorCharacter = '/')
     {
         $prefixLength = 0;
-        while ($prefixLength < strlen($strings[0])) {
-            $prefixChar = $strings[0][$prefixLength];
+        for ($i = 0; $i < strlen($strings[0]); $i++) {
+            $prefixChar = $strings[0][$i];
 
-            for ($i = 1; $i < count($strings); $i++) {
-                if (strlen($strings[$i]) - 1 < $prefixLength || $strings[$i][$prefixLength] !== $prefixChar) {
+            for ($j = 1; $j < count($strings); $j++) {
+                if (strlen($strings[$j]) - 1 < $i || $strings[$j][$i] !== $prefixChar) {
                     break(2);
                 }
             }
 
-            $prefixLength++;
+            if (is_null($terminatorCharacter) || $terminatorCharacter === '' || $prefixChar == $terminatorCharacter) {
+                $prefixLength = $i + strlen($terminatorCharacter);
+            }
         }
 
         $longestPrefix = substr($strings[0], 0, $prefixLength);
