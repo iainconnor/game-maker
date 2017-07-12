@@ -61,7 +61,7 @@ class Swagger2 extends Processor
             return $element->uniqueName;
         }, $uniqueObjects);
 
-        $longestUniqueNamePrefix = $this->getLongestCommonPrefix($uniqueNames);
+        $longestUniqueNamePrefix = $this->getLongestCommonPrefix($uniqueNames, '\\');
 
         $json = [
             'swagger' => '2.0',
@@ -92,6 +92,26 @@ class Swagger2 extends Processor
     /**
      * @param ControllerInformation[] $controllers
      * @return string
+     */
+    protected function extractBasePathFromControllers(array $controllers)
+    {
+        $paths = [];
+
+        foreach ($controllers as $controller) {
+            foreach ($controller->endpoints as $endpoint) {
+                $path = parse_url($endpoint->httpMethod->path, PHP_URL_PATH);
+                if (array_search($path, $paths) === false) {
+                    $paths[] = $path;
+                }
+            }
+        }
+
+        return rtrim($this->getLongestCommonPrefix($paths), '/');
+    }
+
+    /**
+     * @param ControllerInformation[] $controllers
+     * @return string
      * @throws \Exception
      */
     protected function extractHostFromControllers(array $controllers)
@@ -111,26 +131,6 @@ class Swagger2 extends Processor
         }
 
         return $host;
-    }
-
-    /**
-     * @param ControllerInformation[] $controllers
-     * @return string
-     */
-    protected function extractBasePathFromControllers(array $controllers)
-    {
-        $paths = [];
-
-        foreach ($controllers as $controller) {
-            foreach ($controller->endpoints as $endpoint) {
-                $path = parse_url($endpoint->httpMethod->path, PHP_URL_PATH);
-                if (array_search($path, $paths) === false) {
-                    $paths[] = $path;
-                }
-            }
-        }
-
-        return rtrim($this->getLongestCommonPrefix($paths), '/');
     }
 
     /**
@@ -193,66 +193,6 @@ class Swagger2 extends Processor
                     'responses' => $this->generateJsonForResponses($endpoint->outputs, $longestCommonNamePrefix),
                     'tags' => $this->generateJsonForTags($endpoint->tags)
                 ];
-            }
-        }
-
-        return $json;
-    }
-
-    /**
-     * @param string[] $tags
-     * @return array|\string[]
-     */
-    protected function generateJsonForTags(array $tags)
-    {
-
-        return $tags;
-    }
-
-    /**
-     * @param Output[] $outputs
-     * @param $longestCommonNamePrefix
-     * @return array
-     * @throws \Exception
-     */
-    protected function generateJsonForResponses(array $outputs, $longestCommonNamePrefix)
-    {
-        $json = [];
-
-        foreach ($outputs as $output) {
-            /** @var OutputTypeHint $typeHint */
-            $typeHint = $output->typeHint;
-
-            if (array_key_exists($output->statusCode, $json) || count($typeHint->types) > 1) {
-                throw new \Exception("Sorry, as of Swagger 2.0, you can only have one response per HTTP status code. See https://github.com/OAI/OpenAPI-Specification/issues/270.");
-            }
-
-            $type = $typeHint->types[0];
-            $schema = [];
-            if (!$this->typeIsNull($type->type)) {
-                if ($this->typeIsSimple($type->type)) {
-                    $schema['type'] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
-                } else {
-                    $schema['$ref'] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
-                }
-
-                if ($type->type == TypeHint::ARRAY_TYPE) {
-                    if (!$this->typeIsNull($type->genericType)) {
-                        if ($this->typeIsSimple($type->type)) {
-                            $schema['items']['type'] = $this->getSwaggerType($type->genericType, $longestCommonNamePrefix);
-                        } else {
-                            $schema['items']['$ref'] = $this->getSwaggerType($type->genericType, $longestCommonNamePrefix);
-                        }
-                    }
-                }
-            }
-
-            if ($typeHint->description) {
-                $json[$output->statusCode]['description'] = $typeHint->description;
-            }
-
-            if (!empty($schema)) {
-                $json[$output->statusCode]['schema'] = $schema;
             }
         }
 
@@ -335,22 +275,6 @@ class Swagger2 extends Processor
     }
 
     /**
-     * @param Type[] $types ;
-     * @return Type|null
-     */
-    protected function getArrayType(array $types)
-    {
-        foreach ($types as $type) {
-            if ($type->type == TypeHint::ARRAY_TYPE) {
-
-                return $type;
-            }
-        }
-
-        return null;
-    }
-
-    /**
      * @param string $type
      * @return bool
      */
@@ -392,6 +316,82 @@ class Swagger2 extends Processor
         }
 
         return null;
+    }
+
+    /**
+     * @param Type[] $types ;
+     * @return Type|null
+     */
+    protected function getArrayType(array $types)
+    {
+        foreach ($types as $type) {
+            if ($type->type == TypeHint::ARRAY_TYPE) {
+
+                return $type;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param Output[] $outputs
+     * @param $longestCommonNamePrefix
+     * @return array
+     * @throws \Exception
+     */
+    protected function generateJsonForResponses(array $outputs, $longestCommonNamePrefix)
+    {
+        $json = [];
+
+        foreach ($outputs as $output) {
+            /** @var OutputTypeHint $typeHint */
+            $typeHint = $output->typeHint;
+
+            if (array_key_exists($output->statusCode, $json) || count($typeHint->types) > 1) {
+                throw new \Exception("Sorry, as of Swagger 2.0, you can only have one response per HTTP status code. See https://github.com/OAI/OpenAPI-Specification/issues/270.");
+            }
+
+            $type = $typeHint->types[0];
+            $schema = [];
+            if (!$this->typeIsNull($type->type)) {
+                if ($this->typeIsSimple($type->type)) {
+                    $schema['type'] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
+                } else {
+                    $schema['$ref'] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
+                }
+
+                if ($type->type == TypeHint::ARRAY_TYPE) {
+                    if (!$this->typeIsNull($type->genericType)) {
+                        if ($this->typeIsSimple($type->type)) {
+                            $schema['items']['type'] = $this->getSwaggerType($type->genericType, $longestCommonNamePrefix);
+                        } else {
+                            $schema['items']['$ref'] = $this->getSwaggerType($type->genericType, $longestCommonNamePrefix);
+                        }
+                    }
+                }
+            }
+
+            if ($typeHint->description) {
+                $json[$output->statusCode]['description'] = $typeHint->description;
+            }
+
+            if (!empty($schema)) {
+                $json[$output->statusCode]['schema'] = $schema;
+            }
+        }
+
+        return $json;
+    }
+
+    /**
+     * @param string[] $tags
+     * @return array|\string[]
+     */
+    protected function generateJsonForTags(array $tags)
+    {
+
+        return $tags;
     }
 
     /**

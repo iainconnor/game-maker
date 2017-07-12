@@ -33,7 +33,7 @@ class MySqlSchema extends Processor
             return $element->uniqueName;
         }, $uniqueTopLevelObjects);
 
-        $longestUniqueNamePrefix = $this->getLongestCommonPrefix($uniqueNames);
+        $longestUniqueNamePrefix = $this->getLongestCommonPrefix($uniqueNames, '\\');
 
         foreach ($uniqueTopLevelObjects as $object) {
             $tableName = $this->camelToSnake(substr($object->uniqueName, strlen($longestUniqueNamePrefix)));
