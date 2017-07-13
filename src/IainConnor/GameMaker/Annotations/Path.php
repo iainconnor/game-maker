@@ -13,7 +13,6 @@ use Doctrine\Common\Annotations\Annotation\Required;
  */
 abstract class Path
 {
-
     /**
      * @Required()
      * @var string

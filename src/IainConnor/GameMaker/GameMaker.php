@@ -338,7 +338,7 @@ class GameMaker
 
         $methodName = $method->getShortName();
 
-        foreach (HttpMethod::$allHttpMethods as $guess) {
+        foreach (AllHttpMethods::get() as $guess) {
             $guessFriendlyName = GameMaker::getAfterLastSlash($guess);
 
             if (substr(strtolower($methodName), 0, strlen($guessFriendlyName)) == strtolower($guessFriendlyName)) {

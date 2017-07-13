@@ -20,7 +20,7 @@ class Foo {
 	/**
 	 * You can define the endpoint for a method.
 	 *
-	 * @\IainConnor\GameMaker\Annotations\GET(path="/lorem")
+     * @\IainConnor\GameMaker\Annotations\GET("/lorem")
 	 */
 	public function lorem() {
 
@@ -39,13 +39,6 @@ class Foo {
 	 * You can skip the HTTP method annotation, so long as the method name follows a naming convention of `{http-method-name}ApiPathName`.
 	 */
 	public function deleteDolor() {
-
-	}
-
-	/**
-	 * Non-public functions are ignored by default.
-	 */
-	private function imPrivate() {
 
 	}
 
@@ -168,6 +161,14 @@ class Foo {
      * @return null Woah, no output.
      */
     public function getBibendum() {
+
+    }
+
+    /**
+     * Non-public functions are ignored by default.
+     */
+    private function imPrivate()
+    {
 
     }
 }

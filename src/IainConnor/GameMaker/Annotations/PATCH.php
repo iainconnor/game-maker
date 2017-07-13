@@ -13,5 +13,4 @@ namespace IainConnor\GameMaker\Annotations;
  */
 class PATCH extends HttpMethod
 {
-
 }

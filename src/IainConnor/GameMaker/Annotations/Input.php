@@ -15,7 +15,6 @@ use Doctrine\Common\Annotations\Annotation\Target;
  */
 class Input
 {
-
     /**
      * @var string
      */

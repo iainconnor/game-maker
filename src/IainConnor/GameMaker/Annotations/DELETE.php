@@ -15,5 +15,4 @@ use Doctrine\Common\Annotations\Annotation\Target;
  */
 class DELETE extends HttpMethod
 {
-
 }

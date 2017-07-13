@@ -3,6 +3,7 @@
 
 namespace IainConnor\GameMaker\Annotations;
 
+use Doctrine\Common\Annotations\Annotation\Required;
 use Doctrine\Common\Annotations\Annotation\Target;
 
 /**
@@ -13,7 +14,10 @@ use Doctrine\Common\Annotations\Annotation\Target;
  */
 class Tag
 {
-    /** @var string[] */
+    /**
+     * @Required()
+     * @var string[]
+     */
     public $tags;
 
     /** @var boolean */

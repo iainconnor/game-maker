@@ -13,5 +13,4 @@ namespace IainConnor\GameMaker\Annotations;
  */
 class PUT extends HttpMethod
 {
-
 }

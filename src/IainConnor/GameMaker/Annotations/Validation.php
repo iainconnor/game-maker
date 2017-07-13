@@ -7,17 +7,17 @@ use Doctrine\Common\Annotations\Annotation\Required;
 use Doctrine\Common\Annotations\Annotation\Target;
 
 /**
- * Class Middleware
+ * Class Whitelist
  *
  * @package IainConnor\GameMaker\Annotations
  * @Annotation
- * @Target({"CLASS", "METHOD"})
+ * @Target("PROPERTY")
  */
-class Middleware
+class Validation
 {
     /**
      * @Required()
      * @var string[]
      */
-    public $names;
+    public $rules;
 }
