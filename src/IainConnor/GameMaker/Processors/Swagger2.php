@@ -120,12 +120,13 @@ class Swagger2 extends Processor
 
         foreach ($controllers as $controller) {
             foreach ($controller->endpoints as $endpoint) {
+                $port = $this->getPortIfUnique($endpoint->httpMethod->path);
+
                 if ($host == null) {
-                    $port = $this->getPortIfUnique($endpoint->httpMethod->path);
                     $host = parse_url($endpoint->httpMethod->path, PHP_URL_HOST) . ($port ? ':' . $port : '');
                 }
 
-                if ($host != parse_url($endpoint->httpMethod->path, PHP_URL_HOST)) {
+                if ($host != parse_url($endpoint->httpMethod->path, PHP_URL_HOST) . ($port ? ':' . $port : '')) {
                     throw new \Exception("Sorry, Swagger 2.0 requires all endpoints be on the same host.");
                 }
             }
@@ -143,7 +144,6 @@ class Swagger2 extends Processor
     protected function getPortIfUnique($url)
     {
         $port = parse_url($url, PHP_URL_PORT);
-
 
         if (!$port) {
             return null;
