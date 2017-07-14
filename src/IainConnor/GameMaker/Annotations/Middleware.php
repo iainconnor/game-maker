@@ -17,7 +17,7 @@ class Middleware
 {
     /**
      * @Required()
-     * @var string[]
+     * @var string[]|string
      */
     public $names;
 }

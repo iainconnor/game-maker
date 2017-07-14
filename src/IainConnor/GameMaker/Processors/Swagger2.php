@@ -121,7 +121,8 @@ class Swagger2 extends Processor
         foreach ($controllers as $controller) {
             foreach ($controller->endpoints as $endpoint) {
                 if ($host == null) {
-                    $host = parse_url($endpoint->httpMethod->path, PHP_URL_HOST);
+                    $port = $this->getPortIfUnique($endpoint->httpMethod->path);
+                    $host = parse_url($endpoint->httpMethod->path, PHP_URL_HOST) . ($port ? ':' . $port : '');
                 }
 
                 if ($host != parse_url($endpoint->httpMethod->path, PHP_URL_HOST)) {
@@ -131,6 +132,34 @@ class Swagger2 extends Processor
         }
 
         return $host;
+    }
+
+    /**
+     * Returns the port number present in the given URL if it's non-typical/default.
+     *
+     * @param string $url
+     * @return string|null
+     */
+    protected function getPortIfUnique($url)
+    {
+        $port = parse_url($url, PHP_URL_PORT);
+
+
+        if (!$port) {
+            return null;
+        }
+
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+
+        if ($port == 80 && strtolower($scheme) == 'http') {
+            return null;
+        }
+
+        if ($port == 443 && strtolower($scheme) == 'https') {
+            return null;
+        }
+
+        return $port;
     }
 
     /**

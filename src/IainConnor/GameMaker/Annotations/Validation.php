@@ -11,13 +11,13 @@ use Doctrine\Common\Annotations\Annotation\Target;
  *
  * @package IainConnor\GameMaker\Annotations
  * @Annotation
- * @Target("PROPERTY")
+ * @Target("METHOD")
  */
 class Validation
 {
     /**
      * @Required()
-     * @var string[]
+     * @var string[]|string
      */
     public $rules;
 }

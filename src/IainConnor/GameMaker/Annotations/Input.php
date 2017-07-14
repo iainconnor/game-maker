@@ -33,6 +33,9 @@ class Input
 
     public $typeHint;
 
+    /** @var string[] */
+    public $validationRules;
+
     /**
      * @var string
      * @Enum({"CSV", "SSV", "TSV", "PIPES", "MULTI"})

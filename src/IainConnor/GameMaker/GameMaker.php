@@ -29,6 +29,7 @@ use IainConnor\GameMaker\Annotations\PATCH;
 use IainConnor\GameMaker\Annotations\POST;
 use IainConnor\GameMaker\Annotations\PUT;
 use IainConnor\GameMaker\Annotations\Tag;
+use IainConnor\GameMaker\Annotations\Validation;
 use IainConnor\GameMaker\Annotations\Whitelist;
 use IainConnor\GameMaker\NamingConventions\CamelToSnake;
 use IainConnor\GameMaker\NamingConventions\NamingConvention;
@@ -113,7 +114,6 @@ class GameMaker
      */
     protected static function boot()
     {
-
         AnnotationRegistry::registerAutoloadNamespace('IainConnor\GameMaker\Annotations', static::getSrcRoot());
 
         return new GameMaker(
@@ -245,7 +245,7 @@ class GameMaker
                     $endpointMiddlewareAnnotation = $this->annotationReader->getMethodAnnotation($reflectionMethod, Middleware::class);
 
                     $endpoint->method = $reflectionMethod->getName();
-                    $endpoint->middleware = is_null($endpointMiddlewareAnnotation) || !is_array($endpointMiddlewareAnnotation->names) ? [] : $endpointMiddlewareAnnotation->names;
+                    $endpoint->middleware = is_null($endpointMiddlewareAnnotation) ? [] : (!is_array($endpointMiddlewareAnnotation->names) ? [$endpointMiddlewareAnnotation->names] : $endpointMiddlewareAnnotation->names);
                     $endpoint->httpMethod = $httpMethod;
                     $endpoint->inputs = $this->getInputsForMethod($reflectionMethod, $httpMethod);
                     $endpoint->outputs = $this->getOutputsForMethod($reflectionMethod, $httpMethod, $outputWrapperAnnotation, $parsedObjects);
@@ -266,7 +266,7 @@ class GameMaker
             }
         }
 
-        $controller = new ControllerInformation($class, is_null($middlewareAnnotation) || !is_array($middlewareAnnotation->names) ? [] : $middlewareAnnotation->names, $endpoints, array_values($parsedObjects));
+        $controller = new ControllerInformation($class, is_null($middlewareAnnotation) ? [] : (!is_array($middlewareAnnotation->names) ? [$middlewareAnnotation->names] : $middlewareAnnotation->names), $endpoints, array_values($parsedObjects));
 
         $this->parsedControllers[$class] = $controller;
 
@@ -431,6 +431,26 @@ class GameMaker
 
         $methodAnnotations = $this->annotationReader->getMethodAnnotations($method);
 
+        // Merge Validation rules.
+        foreach ($methodAnnotations as $key => &$methodAnnotation) {
+            if ($methodAnnotation instanceof Validation) {
+                for ($i = $key + 1; $i <= key(array_slice($methodAnnotations, -1, 1, true)); $i++) {
+                    // Check if the input annotation is followed by a type hint.
+                    // If it is, merge them.
+                    if ($methodAnnotations[$i] instanceof InputTypeHint || $methodAnnotations[$i] instanceof Input) {
+                        $additionalRules = $methodAnnotation->rules ? (is_array($methodAnnotation->rules) ? $methodAnnotation->rules : [$methodAnnotation->rules]) : [];
+                        if (isset($methodAnnotations[$i]->validationRules) && is_array($methodAnnotations[$i]->validationRules)) {
+                            $methodAnnotations[$i]->validationRules = array_merge($methodAnnotations[$i]->validationRules, $additionalRules);
+                        } else {
+                            $methodAnnotations[$i]->validationRules = $additionalRules;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Extract inputs and merge with typehints.
         foreach ($methodAnnotations as $key => &$methodAnnotation) {
             $input = null;
 
@@ -446,6 +466,13 @@ class GameMaker
                         // If it is, merge them.
                         if ($methodAnnotations[$i] instanceof InputTypeHint) {
                             $input->typeHint = $methodAnnotations[$i];
+                            if (isset($methodAnnotations[$i]->validationRules)) {
+                                if (is_array($input->validationRules)) {
+                                    $input->validationRules = array_merge($input->validationRules, $methodAnnotations[$i]->validationRules);
+                                } else {
+                                    $input->validationRules = $methodAnnotations[$i]->validationRules;
+                                }
+                            }
                             unset($methodAnnotations[$i]);
                             break;
                         } else if ($methodAnnotations[$i] instanceof Input) {
@@ -456,9 +483,15 @@ class GameMaker
             } else if ($methodAnnotation instanceof InputTypeHint) {
                 $input = new Input();
                 $input->typeHint = $methodAnnotation;
+                if (isset($methodAnnotation->validationRules)) {
+                    $input->validationRules = $methodAnnotation->validationRules;
+                }
             }
 
             if ($input != null) {
+                $input->validationRules = $input->validationRules ? (is_array($input->validationRules) ? array_values(array_unique($input->validationRules)) : [$input->validationRules]) : [];
+                unset($input->typeHint->validationRules);
+
                 // Fill in the blanks with rational defaults.
 
                 if ($input->name == null) {
@@ -732,11 +765,11 @@ class GameMaker
         $methodLevelTag = $this->annotationReader->getMethodAnnotation($method, Tag::class);
 
         if ($controllerLevelTag != null && ($methodLevelTag == null || !$methodLevelTag->ignoreParent)) {
-            $tags += $controllerLevelTag->tags;
+            $tags += is_array($controllerLevelTag->tags) ? $controllerLevelTag->tags : [$controllerLevelTag->tags];
         }
 
         if ($methodLevelTag) {
-            $tags += $methodLevelTag->tags;
+            $tags += is_array($methodLevelTag->tags) ? $methodLevelTag->tags : [$methodLevelTag->tags];
         }
 
         return $tags;

@@ -78,9 +78,12 @@ class Foo {
 
 	/**
 	 * Inputs can be part of the query path.
+     * They can also be validated by one or more rules.
 	 *
 	 * @\IainConnor\GameMaker\Annotations\POST(path="/amit/{foo}")
-	 * @param string $foo A string.
+     * @\IainConnor\GameMaker\Annotations\Validation({"notEmpty", "shortString"})
+     * @\IainConnor\GameMaker\Annotations\Validation({"shortString", "alphaString"})
+     * @param string $foo A string.
 	 */
 	public function amit($foo) {
 
@@ -92,7 +95,8 @@ class Foo {
      * You can tag methods with useful information.
      * @\IainConnor\GameMaker\Annotations\Tag(tags={"Foo", "Bar"})
 	 *
-	 * @param string $foo A string.
+     * @\IainConnor\GameMaker\Annotations\Validation("notEmpty")
+     * @param string $foo A string.
 	 */
 	public function getConsecteturFoo($foo) {
 
@@ -101,10 +105,12 @@ class Foo {
 	/**
 	 * If, for whatever reason, you don't want to have (some or any) inputs in your method signature,
 	 * you can still document them, so long as you provide a type hint manually in the annotation.
+     * You can also still bind validations to these, but the validation annotation must appear before the input.
 	 *
 	 * @\IainConnor\GameMaker\Annotations\GET(path="/adipiscing")
 	 *
-	 * @\IainConnor\GameMaker\Annotations\Input(typeHint="string $foo A string.")
+     * @\IainConnor\GameMaker\Annotations\Validation("shortString")
+     * @\IainConnor\GameMaker\Annotations\Input(typeHint="string $foo A string.")
 	 */
 	public function adipiscing() {
 
