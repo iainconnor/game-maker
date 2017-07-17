@@ -296,35 +296,44 @@ class GameMaker
     protected function getFullHttpMethod(\ReflectionMethod $reflectionMethod, API $apiAnnotation = null, Controller $controllerAnnotation = null, $whitelistMode = false)
     {
         /** @var HttpMethod|null $definedMethod */
-        $definedMethod = clone $this->annotationReader->getMethodAnnotation($reflectionMethod, HttpMethod::class);
+        $definedMethod = $this->annotationReader->getMethodAnnotation($reflectionMethod, HttpMethod::class);
+
+        /** @var HttpMethod|null $httpMethod */
+        $httpMethod = null;
 
         if ($definedMethod === null && !$whitelistMode) {
-            $definedMethod = $this->guessHttpMethodFromMethod($reflectionMethod);
+            $httpMethod = $this->guessHttpMethodFromMethod($reflectionMethod);
+        } else if ($definedMethod !== null) {
+            $definedMethodClass = get_class($definedMethod);
+            $httpMethod = new $definedMethodClass;
+            $httpMethod->path = $definedMethod->path;
+            $httpMethod->ignoreParent = $definedMethod->ignoreParent;
+            $httpMethod->friendlyName = $definedMethod->friendlyName;
         }
 
-        if ($definedMethod !== null) {
-            if ($definedMethod->ignoreParent) {
+        if ($httpMethod !== null) {
+            if ($httpMethod->ignoreParent) {
 
-                return $definedMethod;
+                return $httpMethod;
             }
 
             if ($controllerAnnotation !== null) {
 
-                $definedMethod->path = $controllerAnnotation->path . $definedMethod->path;
+                $httpMethod->path = $controllerAnnotation->path . $httpMethod->path;
 
                 if ($controllerAnnotation->ignoreParent) {
 
-                    return $definedMethod;
+                    return $httpMethod;
                 }
             }
 
             if ($apiAnnotation !== null) {
 
-                $definedMethod->path = $apiAnnotation->path . $definedMethod->path;
+                $httpMethod->path = $apiAnnotation->path . $httpMethod->path;
             }
         }
 
-        return $definedMethod;
+        return $httpMethod;
     }
 
     /**
