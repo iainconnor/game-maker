@@ -296,7 +296,7 @@ class GameMaker
     protected function getFullHttpMethod(\ReflectionMethod $reflectionMethod, API $apiAnnotation = null, Controller $controllerAnnotation = null, $whitelistMode = false)
     {
         /** @var HttpMethod|null $definedMethod */
-        $definedMethod = $this->annotationReader->getMethodAnnotation($reflectionMethod, HttpMethod::class);
+        $definedMethod = clone $this->annotationReader->getMethodAnnotation($reflectionMethod, HttpMethod::class);
 
         if ($definedMethod === null && !$whitelistMode) {
             $definedMethod = $this->guessHttpMethodFromMethod($reflectionMethod);
