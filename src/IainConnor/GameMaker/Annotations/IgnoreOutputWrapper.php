@@ -11,6 +11,7 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * @package IainConnor\GameMaker\Annotations
  * @Annotation
  * @Target("METHOD")
+ * @TODO Iain needs improving
  */
 class IgnoreOutputWrapper
 {

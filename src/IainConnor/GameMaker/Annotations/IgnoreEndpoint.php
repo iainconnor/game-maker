@@ -6,7 +6,7 @@ namespace IainConnor\GameMaker\Annotations;
 use Doctrine\Common\Annotations\Annotation\Target;
 
 /**
- * Class IgnoreHttpMethod
+ * If present, ignores the attached method from annotation processing.
  *
  * @package IainConnor\GameMaker\Annotations
  * @Annotation

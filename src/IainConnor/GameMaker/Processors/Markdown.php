@@ -92,9 +92,11 @@ class Markdown extends Processor
                 $markdownTableGenerator = new MarkdownTableGenerator(['Input Name', 'Variable Name', 'Located In', 'Description', 'Allowed Type(s)']);
 
                 foreach ($endpoint->inputs as $input) {
-                    $markdownTableGenerator->addData([$input->name => [$input->name, '`$' . $input->variableName . '`', $input->in, $input->typeHint->description, join(', ', array_map(function (Type $type) {
-                        return "`" . ($type->type ?: "NULL") . ($type->genericType ? (' <' . $type->genericType . '>') : "") . '`';
-                    }, $input->typeHint->types))]]);
+                    if (!isset($input->skipDoc) || $input->skipDoc !== true) {
+                        $markdownTableGenerator->addData([$input->name => [$input->name, '`$' . $input->variableName . '`', $input->in, $input->typeHint->description, join(', ', array_map(function (Type $type) {
+                            return "`" . ($type->type ?: "NULL") . ($type->genericType ? (' <' . $type->genericType . '>') : "") . '`';
+                        }, $input->typeHint->types))]]);
+                    }
                 }
 
                 $markdown .= $markdownTableGenerator->render();
@@ -106,9 +108,11 @@ class Markdown extends Processor
                 $markdownTableGenerator = new MarkdownTableGenerator(['Status', 'Status Code', 'Description', 'Type(s)']);
 
                 foreach ($endpoint->outputs as $key => $output) {
-                    $markdownTableGenerator->addData([$key => [ucwords(strtolower(str_replace('_', ' ', HttpStatusCodes::getDescriptionForCode($output->statusCode)))) . '.', '`' . $output->statusCode . '`', $output->typeHint->description, join(', ', array_map(function (Type $type) {
-                        return "`" . ($type->type ?: "NULL") . ($type->genericType ? (' <' . $type->genericType . '>') : "") . '`';
-                    }, $output->typeHint->types))]]);
+                    if (!isset($output->skipDoc) || $output->skipDoc !== true) {
+                        $markdownTableGenerator->addData([$key => [ucwords(strtolower(str_replace('_', ' ', HttpStatusCodes::getDescriptionForCode($output->statusCode)))) . '.', '`' . $output->statusCode . '`', $output->typeHint->description, join(', ', array_map(function (Type $type) {
+                            return "`" . ($type->type ?: "NULL") . ($type->genericType ? (' <' . $type->genericType . '>') : "") . '`';
+                        }, $output->typeHint->types))]]);
+                    }
                 }
 
                 $markdown .= $markdownTableGenerator->render();

@@ -20,6 +20,6 @@ class Tag
      */
     public $tags;
 
-    /** @var boolean */
+    /** @var bool If set to true, skip merging the list of tags with the parent Controller or API */
     public $ignoreParent = false;
 }

@@ -248,16 +248,16 @@
         },
         {
             "name": "iainconnor/cornucopia",
-            "version": "1.0.1",
+            "version": "1.0.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/iainconnor/cornucopia.git",
-                "reference": "7f6b3eddc32710c778dd815303f8821549b3abf8"
+                "reference": "3dd406f9969bab5847ae3b47b5b15acdaded9d81"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/iainconnor/cornucopia/zipball/7f6b3eddc32710c778dd815303f8821549b3abf8",
-                "reference": "7f6b3eddc32710c778dd815303f8821549b3abf8",
+                "url": "https://api.github.com/repos/iainconnor/cornucopia/zipball/3dd406f9969bab5847ae3b47b5b15acdaded9d81",
+                "reference": "3dd406f9969bab5847ae3b47b5b15acdaded9d81",
                 "shasum": ""
             },
             "require": {
@@ -281,7 +281,7 @@
                 }
             ],
             "description": "Expanded Annotation processor.",
-            "time": "2017-07-11T18:06:48+00:00"
+            "time": "2017-07-21T16:35:06+00:00"
         },
         {
             "name": "nikic/php-parser",
@@ -289,12 +289,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/nikic/PHP-Parser.git",
-                "reference": "4a7d011317063c4763e06dc5f04ea3110eb8a92e"
+                "reference": "6fa073879e10264fdee306b05e4a61eef08f4429"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/4a7d011317063c4763e06dc5f04ea3110eb8a92e",
-                "reference": "4a7d011317063c4763e06dc5f04ea3110eb8a92e",
+                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/6fa073879e10264fdee306b05e4a61eef08f4429",
+                "reference": "6fa073879e10264fdee306b05e4a61eef08f4429",
                 "shasum": ""
             },
             "require": {
@@ -332,7 +332,7 @@
                 "parser",
                 "php"
             ],
-            "time": "2017-06-28 21:12:13"
+            "time": "2017-07-19 15:13:10"
         },
         {
             "name": "symfony/finder",

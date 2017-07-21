@@ -244,49 +244,54 @@ class Swagger2 extends Processor
         $json = [];
 
         foreach ($inputs as $input) {
-            /** @var InputTypeHint $typeHint */
-            $typeHint = $input->typeHint;
+            if (!isset($input->skipDoc) || $input->skipDoc !== true) {
+                /** @var InputTypeHint $typeHint */
+                $typeHint = $input->typeHint;
 
-            $parameter = [
-                'name' => $input->name,
-                'in' => array_key_exists(strtolower($input->in), $this->swaggerInMap) ? $this->swaggerInMap[strtolower($input->in)] : strtolower($input->in),
-                'description' => $typeHint->description,
-                'required' => is_null($typeHint->defaultValue) && !$this->doesNullTypeExist($typeHint->types)
-            ];
+                $parameter = [
+                    'name' => $input->name,
+                    'in' => array_key_exists(strtolower($input->in), $this->swaggerInMap) ? $this->swaggerInMap[strtolower($input->in)] : strtolower($input->in),
+                    'description' => $typeHint->description,
+                    'required' => is_null($typeHint->defaultValue) && !$this->doesNullTypeExist($typeHint->types)
+                ];
 
-            foreach ($typeHint->types as $type) {
-                if (!$this->typeIsNull($type->type)) {
-                    if ($this->typeIsSimple($type->type)) {
-                        $parameter['type'][] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
-                    } else {
-                        if (isset($parameter['schema']['$ref'])) {
-                            throw new \Exception("Sorry, as of Swagger 2.0, you can only have one type of object parameter. See https://github.com/OAI/OpenAPI-Specification/issues/458.");
+                foreach ($typeHint->types as $type) {
+                    if (!$this->typeIsNull($type->type)) {
+                        if ($this->typeIsSimple($type->type)) {
+                            if (isset($parameter['type'])) {
+                                throw new \Exception("Sorry, as of Swagger 2.0, you can only have one type per parameter. See https://github.com/OAI/OpenAPI-Specification/issues/458.");
+                            }
+                            $parameter['type'][] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
+                        } else {
+                            if (isset($parameter['schema']['$ref'])) {
+                                throw new \Exception("Sorry, as of Swagger 2.0, you can only have one type of object parameter. See https://github.com/OAI/OpenAPI-Specification/issues/458.");
+                            }
+                            $parameter['schema']['$ref'] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
                         }
-                        $parameter['schema']['$ref'] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
                     }
                 }
-            }
 
-            if (isset($parameter['type']) && count($parameter['type']) == 1) {
-                $parameter['type'] = array_shift($parameter['type']);
-            }
-
-            if ($input->enum) {
-                $parameter['enum'] = $input->enum;
-            }
-
-            $arrayType = $this->getArrayType($typeHint->types);
-            if ($arrayType) {
-                if ($this->typeIsSimple($arrayType->genericType)) {
-                    $parameter['items']['type'] = $this->getSwaggerType($arrayType->genericType, $longestCommonNamePrefix);
-                } else {
-                    $parameter['items']['$ref'] = $this->getSwaggerType($arrayType->genericType, $longestCommonNamePrefix);
+                if (isset($parameter['type']) && count($parameter['type']) == 1) {
+                    $parameter['type'] = array_shift($parameter['type']);
                 }
 
-                $parameter['collectionFormat'] = strtolower($input->arrayFormat);
-            }
+                if ($input->enum) {
+                    $parameter['enum'] = $input->enum;
+                }
 
-            $json[] = $parameter;
+                $arrayType = $this->getArrayType($typeHint->types);
+                if ($arrayType) {
+                    if ($this->typeIsSimple($arrayType->genericType)) {
+                        $parameter['items']['type'] = $this->getSwaggerType($arrayType->genericType, $longestCommonNamePrefix);
+                    } else {
+                        $parameter['items']['$ref'] = $this->getSwaggerType($arrayType->genericType, $longestCommonNamePrefix);
+                    }
+
+                    $parameter['collectionFormat'] = strtolower($input->arrayFormat);
+                }
+
+                $json[] = $parameter;
+            }
         }
 
         return $json;
@@ -379,39 +384,41 @@ class Swagger2 extends Processor
         $json = [];
 
         foreach ($outputs as $output) {
-            /** @var OutputTypeHint $typeHint */
-            $typeHint = $output->typeHint;
+            if (!isset($output->skipDoc) || $output->skipDoc !== true) {
+                /** @var OutputTypeHint $typeHint */
+                $typeHint = $output->typeHint;
 
-            if (array_key_exists($output->statusCode, $json) || count($typeHint->types) > 1) {
-                throw new \Exception("Sorry, as of Swagger 2.0, you can only have one response per HTTP status code. See https://github.com/OAI/OpenAPI-Specification/issues/270.");
-            }
-
-            $type = $typeHint->types[0];
-            $schema = [];
-            if (!$this->typeIsNull($type->type)) {
-                if ($this->typeIsSimple($type->type)) {
-                    $schema['type'] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
-                } else {
-                    $schema['$ref'] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
+                if (array_key_exists($output->statusCode, $json) || count($typeHint->types) > 1) {
+                    throw new \Exception("Sorry, as of Swagger 2.0, you can only have one response per HTTP status code. See https://github.com/OAI/OpenAPI-Specification/issues/270.");
                 }
 
-                if ($type->type == TypeHint::ARRAY_TYPE) {
-                    if (!$this->typeIsNull($type->genericType)) {
-                        if ($this->typeIsSimple($type->genericType)) {
-                            $schema['items']['type'] = $this->getSwaggerType($type->genericType, $longestCommonNamePrefix);
-                        } else {
-                            $schema['items']['$ref'] = $this->getSwaggerType($type->genericType, $longestCommonNamePrefix);
+                $type = $typeHint->types[0];
+                $schema = [];
+                if (!$this->typeIsNull($type->type)) {
+                    if ($this->typeIsSimple($type->type)) {
+                        $schema['type'] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
+                    } else {
+                        $schema['$ref'] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
+                    }
+
+                    if ($type->type == TypeHint::ARRAY_TYPE) {
+                        if (!$this->typeIsNull($type->genericType)) {
+                            if ($this->typeIsSimple($type->genericType)) {
+                                $schema['items']['type'] = $this->getSwaggerType($type->genericType, $longestCommonNamePrefix);
+                            } else {
+                                $schema['items']['$ref'] = $this->getSwaggerType($type->genericType, $longestCommonNamePrefix);
+                            }
                         }
                     }
                 }
-            }
 
-            if ($typeHint->description) {
-                $json[$output->statusCode]['description'] = $typeHint->description;
-            }
+                if ($typeHint->description) {
+                    $json[$output->statusCode]['description'] = $typeHint->description;
+                }
 
-            if (!empty($schema)) {
-                $json[$output->statusCode]['schema'] = $schema;
+                if (!empty($schema)) {
+                    $json[$output->statusCode]['schema'] = $schema;
+                }
             }
         }
 
@@ -476,6 +483,10 @@ class Swagger2 extends Processor
             foreach ($property->types as $type) {
                 if (!$this->typeIsNull($type->type)) {
                     if ($this->typeIsSimple($type->type)) {
+                        if (isset($propertySchema['type'])) {
+                            throw new \Exception("Sorry, as of Swagger 2.0, you can only have one type per parameter. See https://github.com/OAI/OpenAPI-Specification/issues/458.");
+                        }
+
                         $propertySchema['type'][] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
                     } else {
                         if (isset($propertySchema['$ref'])) {

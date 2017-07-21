@@ -15,13 +15,13 @@ abstract class Path
 {
     /**
      * @Required()
-     * @var string
+     * @var string The URI to associate with this endpoint.
      */
     public $path;
 
-    /** @var string */
+    /** @var string A user-friendly name for documentation purposes. */
     public $friendlyName = null;
 
-    /** @var bool */
+    /** @var bool If set to true, skip merging the path with the parent Controller or API */
     public $ignoreParent = false;
 }

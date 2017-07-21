@@ -19,10 +19,4 @@ class OutputWrapper
      * @Required()
      */
     public $class;
-
-    /**
-     * @var string
-     * @Required()
-     */
-    public $property;
 }

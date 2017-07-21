@@ -21,13 +21,18 @@ class Output
      */
     public $statusCode;
 
-    /**
-     * @var string
-     */
+    /** The type information associated with this output. */
     public $typeHint;
 
+    /** @var string The path to where to where to insert */
+    public $outputWrapperPath;
+
     /**
-     * @var bool
+     * @var string If the output wrapper path has existing content, controls whether to override that content or merge with it.
+     * @Enum({"OVERRIDE", "MERGE"})
      */
-    public $outputWrapperProvider;
+    public $outputWrapperMode = \IainConnor\GameMaker\OutputWrapper::MODE_OVERRIDE;
+
+    /** @var bool Omits this input from documentation output if true. */
+    public $skipDoc = false;
 }

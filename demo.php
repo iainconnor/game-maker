@@ -1,5 +1,7 @@
 <?php
 
+use IainConnor\GameMaker\OutputWrapper;
+
 include(dirname(__FILE__) . "/vendor/autoload.php");
 
 const MY_DOMAIN = "http://www.mydemo.com";
@@ -69,7 +71,8 @@ class Foo {
 	 *
 	 * Inputs can be type-hinted as one of a set of possible values.
 	 * Inputs are required unless defaulted or type-hinted as null.
-	 * @\IainConnor\GameMaker\Annotations\Input(enum={"yes", "no"})
+     * You can also omit inputs from documentation if you wish to hide them for whatever reason.
+     * @\IainConnor\GameMaker\Annotations\Input(enum={"yes", "no"}, skipDoc=true)
 	 * @param null|string $baz An optional stringey boolean.
 	 */
 	public function sit($foo, array $bar, $baz = null) {
@@ -156,13 +159,12 @@ class Foo {
      * It's fairly common that your API will use a wrapper for some standard output format, and just fill in specific
      * gaps in that format.
      *
-     *
      * Define the wrapper class and the property to override by default.
-     * @\IainConnor\GameMaker\Annotations\OutputWrapper(class="Bar", property="data")
+     * @\IainConnor\GameMaker\Annotations\OutputWrapper(class="Bar")
      *
-     * And then the property you return will fill in that property in the response.
-     * @\IainConnor\GameMaker\Annotations\Output(outputWrapperProvider=true)
-     * @return string[] The data node in the wrapper.
+     * And then return one or more properties to fill in spots in that wrapper.
+     * @\IainConnor\GameMaker\Annotations\Output(outputWrapperPath="Response.foo")
+     * @return string[] The fizz node in the wrapper.
      *
      * @return null Woah, no output.
      */
@@ -184,7 +186,7 @@ class Foo {
  *
  * You can define a wrapper used for all routes in a Class.
  * As before, just define the wrapper class and the property to override by default.
- * @\IainConnor\GameMaker\Annotations\OutputWrapper(class="Bar", property="data")
+ * @\IainConnor\GameMaker\Annotations\OutputWrapper(class="Bar")
  *
  *
  * You can also Tag entire Controllers.
@@ -196,14 +198,25 @@ class Foo {
 class Baz {
 
     /**
-     * If there's only one return type, it will be used for the OutputWrapper by default.
-     *
      * You can override the Controller-level Tag.
      * @\IainConnor\GameMaker\Annotations\Tag(tags={"Baz"}, ignoreParent=true)
      *
-     * @return int[] The data node for the wrapper.
+     * @\IainConnor\GameMaker\Annotations\Output(outputWrapperPath="Response.fizz.fuzz", outputWrapperMode="MERGE")
+     * @return Biz The node for the wrapper.
      */
     public function putEuismod() {
+
+    }
+
+    /**
+     * You can override the Controller-level Tag.
+     * @\IainConnor\GameMaker\Annotations\Tag(tags={"Baz"}, ignoreParent=true)
+     *
+     * @\IainConnor\GameMaker\Annotations\Output(outputWrapperPath="Response.a.b.c.d")
+     * @return Biz The node for the wrapper.
+     */
+    public function patchQuis()
+    {
 
     }
 
@@ -218,21 +231,28 @@ class Baz {
     }
 }
 
-class Bar {
+class Bar extends OutputWrapper
+{
     /**
-     * @var array The data.
+     * Return the output format.
+     *
+     * @return array
      */
-    public $data;
-
-    /**
-     * @var string[] Errors, if any.
-     */
-    public $errors = [];
-
-    /**
-     * @var string[] Human-readable messages, if any.
-     */
-    public $messages = [];
+    public function getFormat()
+    {
+        return [
+            'Response' => [
+                'foo' => 'string',
+                'bar' => 'string',
+                'fizz' => [
+                    'fuzz' => [
+                        'bazz' => 'string',
+                        'bizz' => 'string'
+                    ]
+                ]
+            ]
+        ];
+    }
 }
 
 class Biz {
