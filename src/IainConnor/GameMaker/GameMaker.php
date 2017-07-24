@@ -624,8 +624,7 @@ class GameMaker
 
                 if ($output->typeHint != null) {
                     foreach ($output->typeHint->types as $outputType) {
-                        $outputTypeObjectOfInterest = $outputType->genericType ?: $outputType->type;
-                        $this->parseObject($outputTypeObjectOfInterest, $parsedObjects);
+                        $this->parseObject($outputType->getTypeOfInterest(), $parsedObjects);
                     }
                 }
 
@@ -633,7 +632,7 @@ class GameMaker
                     $outputWrapperStatusCode = $output->statusCode;
 
                     $outputWrapperUniqueNameParts[$output->outputWrapperPath] = array_map(function (Type $type) {
-                        return $type->type == TypeHint::ARRAY_TYPE ? ('Array' . ($type->genericType ? 'Of' . ucfirst($type->genericType) . 's' : '')) : ucfirst($type->type ?: 'null');
+                        return $type->type == TypeHint::ARRAY_TYPE ? ('Array' . ($type->genericType ? 'Of' . ucfirst($type->genericType) . 's' : '')) : ucfirst($type->type ?: TypeHint::NULL_TYPE);
                     }, $output->typeHint->types);
 
                     // Alphabetize for consistency.
@@ -683,38 +682,27 @@ class GameMaker
         return $outputs;
     }
 
-    /*
-    // Swap with defined output wrapper, if appropriate.
-    if ($outputForWrapper != null && $outputWrapperAnnotation != null && $this->annotationReader->getMethodAnnotation($method, IgnoreOutputWrapper::class) == null) {
-        // Create a unique name for this type of output wrapper for the specified type.
-        $outputWrapperAnnotation->class = ltrim($outputWrapperAnnotation->class, '\\');
-        $outputWrapperUniqueNameForType = $outputWrapperAnnotation->class . "With" . ucfirst($outputForWrapper->typeHint->types[0]->type) . ($outputForWrapper->typeHint->types[0]->genericType ? ("Of" . ucfirst($outputForWrapper->typeHint->types[0]->genericType) . "s") : "");
-
-        if (!array_key_exists($outputWrapperUniqueNameForType, $parsedObjects)) {
-            $this->parseObject($outputWrapperAnnotation->class, $parsedObjects);
-
-            $genericOutputWrapperParsedObject = $parsedObjects[$outputWrapperAnnotation->class];
-
-            $parsedObjects[$outputWrapperUniqueNameForType] = $this->cloneOutputWrapperAndSwapPropertyTypeHint($genericOutputWrapperParsedObject, $outputWrapperUniqueNameForType, $outputWrapperAnnotation->property, $outputForWrapper->typeHint);
-            unset($parsedObjects[$outputWrapperAnnotation->class]);
+    /**
+     * Retrieves a typehint for the given types.
+     *
+     * @param Type[] $types
+     *
+     * @return string
+     */
+    protected function getTypeHintStringForTypes(array $types)
+    {
+        if (empty($types)) {
+            return TypeHint::NULL_TYPE;
         }
 
-        // And swap with the original output.
-        foreach ($outputs as $key => $output) {
-            if ($output == $outputForWrapper) {
-                $wrappedOutputType = new Type();
-                $wrappedOutputType->type = $outputWrapperUniqueNameForType;
-
-                $outputs[$key]->typeHint = new OutputTypeHint([$wrappedOutputType], null, $output->typeHint->description);
-
-                break;
-            }
-        }
-
+        return join(TypeHint::TYPE_SEPARATOR, array_map(function (Type $type) {
+            return (string)$type;
+        }, $types));
     }
-    */
 
     /**
+     * Traverses the provided output wrapper and swaps the type hint at the given path for the given type.
+     *
      * @param array $outputWrapperFormat
      * @param string $outputWrapperPath
      * @param string $outputWrapperMode
@@ -726,34 +714,25 @@ class GameMaker
     {
         $outputWrapperPathParts = explode('.', $outputWrapperPath);
         $key = $outputWrapperPathParts[0];
-        if (count($outputWrapperPathParts) == 1 || !array_key_exists($key, $outputWrapperFormat)) {
+        $atBottom = count($outputWrapperPathParts) == 1 || (array_key_exists($key, $outputWrapperFormat) && !is_array($outputWrapperFormat[$key]));
+        $bottomDoesntExist = !array_key_exists($key, $outputWrapperFormat);
+        if ($atBottom || $bottomDoesntExist) {
             // If we're at the bottom or we can't recurse anymore.
-            $hintedTypes = [];
-            foreach ($types as $type) {
-                $hintedTypes[] = $type->type == TypeHint::ARRAY_TYPE ? $type->genericType . TypeHint::ARRAY_TYPE_SHORT : $type->type;
-            }
-
-            if (count($outputWrapperPathParts) == 1) {
+            if ($atBottom) {
                 if ($outputWrapperMode == \IainConnor\GameMaker\OutputWrapper::MODE_OVERRIDE) {
-                    $outputWrapperFormat[$key] = join(TypeHint::TYPE_SEPARATOR, $hintedTypes);
+                    $outputWrapperFormat[$key] = $this->getTypeHintStringForTypes($types);
                 } else {
                     foreach ($types as $type) {
-                        $typeOfInterest = $type->type == TypeHint::ARRAY_TYPE ? $type->genericType : $type->type;
-                        $parsedObject = $this->parseObject($typeOfInterest, $parsedObjects);
+                        $parsedObject = $this->parseObject($type->getTypeOfInterest(), $parsedObjects);
                         if ($parsedObject) {
                             foreach ($parsedObject->properties as $property) {
-                                $propertyTypes = [];
-                                foreach ($property->types as $type) {
-                                    $propertyTypes[] = $type->type == TypeHint::ARRAY_TYPE ? $type->genericType . TypeHint::ARRAY_TYPE_SHORT : (strval($type->type) ?: 'null');
-                                }
-
-                                $outputWrapperFormat[$key][$property->variableName] = join(TypeHint::TYPE_SEPARATOR, $propertyTypes);
+                                $outputWrapperFormat[$key][$property->variableName] = $this->getTypeHintStringForTypes($property->types);
                             }
                         }
                     }
                 }
-            } else {
-                $this->setPathInArrayToValue($outputWrapperPath, $outputWrapperFormat, join(TypeHint::TYPE_SEPARATOR, $hintedTypes));
+            } else if ($bottomDoesntExist) {
+                $this->setPathInArrayToValue($outputWrapperPath, $outputWrapperFormat, $this->getTypeHintStringForTypes($types));
             }
         } else {
             // Recurse.
@@ -860,10 +839,8 @@ class GameMaker
                         // Recurse into types that represent objects and ensure they're in the graph.
                         if ($depth <= $this->maxRecursionDepth) {
                             foreach ($propertyAnnotation->types as $type) {
-                                $classOfInterest = $type->genericType ?: $type->type;
-
                                 // Recurse.
-                                $this->parseObject($classOfInterest, $parsedObjects, $depth + 1);
+                                $this->parseObject($type->getTypeOfInterest(), $parsedObjects, $depth + 1);
                             }
                         }
                     }
