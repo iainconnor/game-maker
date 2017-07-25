@@ -156,7 +156,7 @@ class GameMaker
      * @param string $classNamePattern
      * @return ControllerInformation[]
      */
-    public function parseControllersInPath($path, $depth = 0, $fileNamePattern = '*.php', $classNamePattern = '*')
+    public function parseControllersInPath($path, $depth = 0, $fileNamePattern = '*.php', $classNamePattern = '')
     {
 
         return $this->parseControllersInNamespaceInPath(null, $path, $depth, $fileNamePattern, $classNamePattern);
@@ -172,7 +172,7 @@ class GameMaker
      * @param string $classNamePattern
      * @return ControllerInformation[]
      */
-    public function parseControllersInNamespaceInPath($namespace, $path, $depth = 0, $fileNamePattern = '*.php', $classNamePattern = '*')
+    public function parseControllersInNamespaceInPath($namespace, $path, $depth = 0, $fileNamePattern = '*.php', $classNamePattern = '')
     {
         $classes = [];
 
@@ -183,13 +183,9 @@ class GameMaker
         }
 
         $iterator = new ClassIterator($this->finder);
-        $iterator->inNamespace($namespace);
-        if ($classNamePattern && $classNamePattern != '*') {
-            $iterator->name('/' . preg_quote($classNamePattern, '/') . '/');
-        }
 
         /** @var \ReflectionClass $reflectionClass */
-        foreach ($iterator as $reflectionClass) {
+        foreach ($iterator->inNamespace($namespace)->name('/' . $classNamePattern . '/') as $reflectionClass) {
             $classes[] = $reflectionClass->getName();
         }
 
