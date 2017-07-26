@@ -221,7 +221,7 @@ class Swagger2 extends Processor
                 $relativePath = substr(parse_url($endpoint->httpMethod->path, PHP_URL_PATH), $basePath ? strlen($basePath) : 0);
 
                 $json[$relativePath][strtolower(GameMaker::getAfterLastSlash(get_class($endpoint->httpMethod)))] = [
-                    'description' => $endpoint->description,
+                    'description' => ($endpoint->description ?: ''),
                     'operationId' => $endpoint->httpMethod->friendlyName ? (str_replace(' ', '', ucwords($endpoint->httpMethod->friendlyName))) : (substr($controller->class, strlen($longestCommonControllersPrefix)) . "@" . $endpoint->method),
                     'parameters' => $this->generateJsonForParameters($endpoint->inputs, $longestCommonNamePrefix),
                     'responses' => $this->generateJsonForResponses($endpoint->outputs, $longestCommonNamePrefix),
@@ -251,7 +251,7 @@ class Swagger2 extends Processor
                 $parameter = [
                     'name' => $input->name,
                     'in' => array_key_exists(strtolower($input->in), $this->swaggerInMap) ? $this->swaggerInMap[strtolower($input->in)] : strtolower($input->in),
-                    'description' => $typeHint->description,
+                    'description' => $typeHint->description ?: '',
                     'required' => is_null($typeHint->defaultValue) && !$this->doesNullTypeExist($typeHint->types)
                 ];
 

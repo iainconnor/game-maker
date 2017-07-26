@@ -43,7 +43,7 @@ class JsonSchema extends Processor
             $objects[$name] = json_encode(array_merge($definition, [
                 '$schema' => "http://json-schema.org/draft-04/schema#",
                 'title' => $name,
-                'description' => $swaggerContents['info']['description'],
+                'description' => $swaggerContents['info']['description'] ?: '',
                 'definitions' => $localDefinitions
             ]), JSON_PRETTY_PRINT);
         }
