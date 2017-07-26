@@ -312,7 +312,7 @@ class GameMaker
         } else if ($definedMethod !== null) {
             $definedMethodClass = get_class($definedMethod);
             $httpMethod = new $definedMethodClass;
-            $httpMethod->path = $definedMethod->path;
+            $httpMethod->path = getenv($definedMethod->path) !== false ? getenv($definedMethod->path) : $definedMethod->path;
             $httpMethod->ignoreParent = $definedMethod->ignoreParent;
             $httpMethod->friendlyName = $definedMethod->friendlyName;
         }
@@ -325,7 +325,7 @@ class GameMaker
 
             if ($controllerAnnotation !== null) {
 
-                $httpMethod->path = $controllerAnnotation->path . $httpMethod->path;
+                $httpMethod->path = (getenv($controllerAnnotation->path) !== false ? getenv($controllerAnnotation->path) : $controllerAnnotation->path) . $httpMethod->path;
 
                 if ($controllerAnnotation->ignoreParent) {
 
@@ -335,7 +335,7 @@ class GameMaker
 
             if ($apiAnnotation !== null) {
 
-                $httpMethod->path = $apiAnnotation->path . $httpMethod->path;
+                $httpMethod->path = (getenv($apiAnnotation->path) !== false ? getenv($apiAnnotation->path) : $apiAnnotation->path) . $httpMethod->path;
             }
         }
 
