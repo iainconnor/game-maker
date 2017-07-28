@@ -639,7 +639,7 @@ class GameMaker
                     $outputWrapperStatusCode = $output->statusCode;
 
                     $outputWrapperUniqueNameParts[$output->outputWrapperPath] = array_map(function (Type $type) {
-                        return $type->type == TypeHint::ARRAY_TYPE ? ('Array' . ($type->genericType ? 'Of' . ucfirst($type->genericType) . 's' : '')) : ucfirst($type->type ?: TypeHint::NULL_TYPE);
+                        return $type->type == TypeHint::ARRAY_TYPE ? ('Array' . ($type->genericType ? 'Of' . ucfirst(GameMaker::getAfterLastSlash($type->genericType)) . 's' : '')) : ucfirst(GameMaker::getAfterLastSlash($type->type)) ?: TypeHint::NULL_TYPE;
                     }, $output->typeHint->types);
 
                     // Alphabetize for consistency.
@@ -655,15 +655,13 @@ class GameMaker
         // Swap output with defined output wrapper, if appropriate.
         if (!empty($outputWrapperFormat) && !empty($outputWrapperUniqueNameParts) && !empty($outputWrapperClass) && isset($outputWrapperStatusCode) && $outputWrapperAnnotation != null) {
             // Generate a unique name for this wrapper.
-            $outputWrapperUniqueName = str_replace('\\', '', $outputWrapperClass) . "With";
-            $outputWrapperDescription = GameMaker::getAfterLastSlash($outputWrapperClass) . ' With ';
+            $outputWrapperUniqueName = $outputWrapperClass . "With";
+            $outputWrapperDescription = GameMaker::getAfterLastSlash($outputWrapperClass) . ' with ';
             foreach ($outputWrapperUniqueNameParts as $path => $typeList) {
-                $outputWrapperUniqueName .= str_replace('.', '', ucwords($path, '.')) . 'As' . join('Or', array_map(function ($element) {
-                        return str_replace('\\', '', $element);
-                    }, $typeList)) . 'And';
+                $outputWrapperUniqueName .= str_replace('.', '', ucwords($path, '.')) . 'As' . join('Or', $typeList) . 'And';
 
                 $outputWrapperDescription .= '`' . $path . '` as ' . join(' or ', array_map(function ($element) {
-                        return GameMaker::getAfterLastSlash($element);
+                        return str_replace('ArrayOf', 'array of ', $element);
                     }, $typeList)) . ' and ';
             }
 
@@ -677,11 +675,12 @@ class GameMaker
             $outputWrapperTypeHint = new Type();
             $outputWrapperTypeHint->type = $outputWrapperUniqueName;
 
-            $outputWrapperOutputTypeHint = new OutputTypeHint([$outputWrapperTypeHint], null, substr($outputWrapperDescription, 0, -5));
+            $outputWrapperOutputTypeHint = new OutputTypeHint([$outputWrapperTypeHint], null, substr($outputWrapperDescription, 0, -5) . '.');
 
             $outputWrapperOutput = new Output();
             $outputWrapperOutput->statusCode = $outputWrapperStatusCode;
             $outputWrapperOutput->typeHint = $outputWrapperOutputTypeHint;
+
 
             $outputs[] = $outputWrapperOutput;
         }
@@ -807,7 +806,7 @@ class GameMaker
                     $outputWrapperPropertyType = new Type();
                     $outputWrapperPropertyType->type = $outputWrapperPropertyClass;
 
-                    $properties[] = new TypeHint([$outputWrapperPropertyType], $key);
+                    $properties[] = new TypeHint([$outputWrapperPropertyType], $key, '');
                 } else {
                     $properties[] = TypeHint::parseToInstanceOf(TypeHint::class, $val, $imports, '$' . $key);
                 }
