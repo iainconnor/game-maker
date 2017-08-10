@@ -581,7 +581,7 @@ class GameMaker
                         if ($type->type == TypeHint::ARRAY_TYPE) {
                             if ($input->arrayFormat == null) {
                                 $input->arrayFormat = $this->defaultArrayFormat;
-                            } else if ($input->arrayFormat = 'MULTI' && !($input->in == 'QUERY' || $input->in == 'FORM')) {
+                            } else if ($input->arrayFormat == 'MULTI' && !($input->in == 'QUERY' || $input->in == 'FORM')) {
                                 throw new \Exception("MULTI array format can only be used for inputs in the QUERY or FORM.");
                             }
                         }
