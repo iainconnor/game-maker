@@ -78,6 +78,12 @@ class GameMaker
      */
     protected $finder;
 
+    /** @var string[] */
+    protected $ignoredInputTypes = [];
+
+    /** @var string[] */
+    protected $ignoredOutputTypes = [];
+
     /**
      * GameMaker constructor.
      *
@@ -106,6 +112,50 @@ class GameMaker
         }
 
         return static::$instance;
+    }
+
+    /**
+     * Adds a type to ignore when documenting input.
+     *
+     * @param string $type
+     */
+    public function addIgnoredInputType($type)
+    {
+        if (array_search($type, $this->ignoredInputTypes) === false) {
+            $this->ignoredInputTypes[] = $type;
+        }
+    }
+
+    /**
+     * Adds a type to ignore when documenting output.
+     *
+     * @param string $type
+     */
+    public function addIgnoredOutputType($type)
+    {
+        if (array_search($type, $this->ignoredOutputTypes) === false) {
+            $this->ignoredOutputTypes[] = $type;
+        }
+    }
+
+    /**
+     * Sets an array of types to ignore when documenting input.
+     *
+     * @param string[] $types
+     */
+    public function setIgnoredInputTypes(array $types)
+    {
+        $this->ignoredInputTypes = $types;
+    }
+
+    /**
+     * Sets an array of types to ignore when documenting output.
+     *
+     * @param string[] $types
+     */
+    public function setIgnoredOutputTypes(array $types)
+    {
+        $this->ignoredOutputTypes = $types;
     }
 
     /**
@@ -437,7 +487,8 @@ class GameMaker
      *
      * @param \ReflectionMethod $method
      * @param HttpMethod $httpMethod
-     * @return Annotations\Input[]
+     * @return Input[]
+     * @throws \Exception
      */
     protected function getInputsForMethod(\ReflectionMethod $method, HttpMethod $httpMethod)
     {
@@ -525,13 +576,18 @@ class GameMaker
                     }
                 }
 
+                if ($input->typeHint != null) {
+                    foreach ($input->typeHint->types as $type) {
+                        if ($type->type == TypeHint::ARRAY_TYPE) {
+                            if ($input->arrayFormat == null) {
+                                $input->arrayFormat = $this->defaultArrayFormat;
+                            } else if ($input->arrayFormat = 'MULTI' && !($input->in == 'QUERY' || $input->in == 'FORM')) {
+                                throw new \Exception("MULTI array format can only be used for inputs in the QUERY or FORM.");
+                            }
+                        }
 
-                foreach ($input->typeHint->types as $type) {
-                    if ($type == TypeHint::ARRAY_TYPE) {
-                        if ($input->arrayFormat == null) {
-                            $input->arrayFormat = $this->defaultArrayFormat;
-                        } else if ($input->arrayFormat = 'MULTI' && !($input->in == 'QUERY' || $input->in == 'FORM')) {
-                            throw new \Exception("MULTI array format can only be used for inputs in the QUERY or FORM.");
+                        if ($input->skipDoc !== true && (array_search($type->type, $this->ignoredInputTypes) !== false || array_search($type->genericType, $this->ignoredInputTypes) !== false)) {
+                            $input->skipDoc = true;
                         }
                     }
                 }
@@ -634,6 +690,10 @@ class GameMaker
                 if ($output->typeHint != null) {
                     foreach ($output->typeHint->types as $outputType) {
                         $this->parseObject($outputType->getTypeOfInterest(), $parsedObjects);
+
+                        if ($output->skipDoc !== true && (array_search($outputType->type, $this->ignoredOutputTypes) !== false || array_search($outputType->genericType, $this->ignoredOutputTypes) !== false)) {
+                            $output->skipDoc = true;
+                        }
                     }
                 }
 
