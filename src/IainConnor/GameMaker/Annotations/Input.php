@@ -38,7 +38,7 @@ class Input
 
     /**
      * @var string The format of the array data.
-     * @Enum({"CSV", "SSV", "TSV", "PIPES", "MULTI"})
+     * @Enum({"CSV", "SSV", "TSV", "PIPES", "MULTI", "BRACKETS"})
      */
     public $arrayFormat;
 

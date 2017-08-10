@@ -525,11 +525,13 @@ class GameMaker
                     }
                 }
 
-                if ($input->arrayFormat == null) {
-                    foreach ($input->typeHint->types as $type) {
-                        if ($type == TypeHint::ARRAY_TYPE) {
+
+                foreach ($input->typeHint->types as $type) {
+                    if ($type == TypeHint::ARRAY_TYPE) {
+                        if ($input->arrayFormat == null) {
                             $input->arrayFormat = $this->defaultArrayFormat;
-                            break;
+                        } else if ($input->arrayFormat = 'MULTI' && !($input->in == 'QUERY' || $input->in == 'FORM')) {
+                            throw new \Exception("MULTI array format can only be used for inputs in the QUERY or FORM.");
                         }
                     }
                 }

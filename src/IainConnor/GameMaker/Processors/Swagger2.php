@@ -34,6 +34,14 @@ class Swagger2 extends Processor
         'form' => 'formData'
     ];
 
+    public $swaggerSupportedArrayFormats = [
+        'CSV',
+        'SSV',
+        'TSV',
+        'PIPES',
+        'MULTI'
+    ];
+
     /**
      * Swagger2 constructor.
      * @param string $title
@@ -258,9 +266,7 @@ class Swagger2 extends Processor
                 foreach ($typeHint->types as $type) {
                     if (!$this->typeIsNull($type->type)) {
                         if ($this->typeIsSimple($type->type)) {
-                            if (isset($parameter['type'])) {
-                                throw new \Exception("Sorry, as of Swagger 2.0, you can only have one type per parameter. See https://github.com/OAI/OpenAPI-Specification/issues/458.");
-                            }
+
                             $parameter['type'][] = $this->getSwaggerType($type->type, $longestCommonNamePrefix);
                         } else {
                             if (isset($parameter['schema']['$ref'])) {
@@ -273,6 +279,8 @@ class Swagger2 extends Processor
 
                 if (isset($parameter['type']) && count($parameter['type']) == 1) {
                     $parameter['type'] = array_shift($parameter['type']);
+                } else {
+                    throw new \Exception("Sorry, as of Swagger 2.0, you can only have one type per parameter. See https://github.com/OAI/OpenAPI-Specification/issues/458.");
                 }
 
                 if ($input->enum) {
@@ -280,7 +288,7 @@ class Swagger2 extends Processor
                 }
 
                 $arrayType = $this->getArrayType($typeHint->types);
-                if ($arrayType) {
+                if ($arrayType && array_search($arrayType, $this->swaggerSupportedArrayFormats) !== false) {
                     if ($this->typeIsSimple($arrayType->genericType)) {
                         $parameter['items']['type'] = $this->getSwaggerType($arrayType->genericType, $longestCommonNamePrefix);
                     } else {
@@ -288,6 +296,9 @@ class Swagger2 extends Processor
                     }
 
                     $parameter['collectionFormat'] = strtolower($input->arrayFormat);
+                } else {
+                    // Unsupported array format, treat it as just a string.
+                    $parameter['type'] = 'string';
                 }
 
                 $json[] = $parameter;
