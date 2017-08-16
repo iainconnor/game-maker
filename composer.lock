@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "0d5e250465d1c23e75c41378ff7f7cca",
+    "content-hash": "b9bb845016cd04e95c6ef0982ba0c604",
     "packages": [
         {
             "name": "doctrine/annotations",
@@ -248,16 +248,16 @@
         },
         {
             "name": "iainconnor/cornucopia",
-            "version": "1.0.10",
+            "version": "1.0.11",
             "source": {
                 "type": "git",
                 "url": "https://github.com/iainconnor/cornucopia.git",
-                "reference": "f29d9ba378f54375730f1a695276e592513e0303"
+                "reference": "4283b1c6fe3cf762ea745c21eae6585ab37a5baa"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/iainconnor/cornucopia/zipball/f29d9ba378f54375730f1a695276e592513e0303",
-                "reference": "f29d9ba378f54375730f1a695276e592513e0303",
+                "url": "https://api.github.com/repos/iainconnor/cornucopia/zipball/4283b1c6fe3cf762ea745c21eae6585ab37a5baa",
+                "reference": "4283b1c6fe3cf762ea745c21eae6585ab37a5baa",
                 "shasum": ""
             },
             "require": {
@@ -281,7 +281,7 @@
                 }
             ],
             "description": "Expanded Annotation processor.",
-            "time": "2017-08-11T21:28:39+00:00"
+            "time": "2017-08-16T22:10:21+00:00"
         },
         {
             "name": "nikic/php-parser",

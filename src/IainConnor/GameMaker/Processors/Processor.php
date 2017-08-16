@@ -9,6 +9,19 @@ use IainConnor\GameMaker\ObjectInformation;
 
 abstract class Processor
 {
+    /**
+     * @var bool
+     */
+    protected $branding = true;
+
+    /**
+     * @param bool $branding
+     */
+    public function setBranding($branding)
+    {
+        $this->branding = $branding;
+    }
+
     public function processController(ControllerInformation $controller)
     {
 
@@ -48,6 +61,10 @@ abstract class Processor
      */
     protected function getLongestCommonPrefix(array $strings, $terminatorCharacter = '/')
     {
+        if (empty($strings)) {
+            return '';
+        }
+
         $prefixLength = 0;
         for ($i = 0; $i < strlen($strings[0]); $i++) {
             $prefixChar = $strings[0][$i];

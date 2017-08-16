@@ -303,15 +303,18 @@ class GameMaker
                     $endpoint->method = $reflectionMethod->getName();
                     $endpoint->middleware = is_null($endpointMiddlewareAnnotation) ? [] : (!is_array($endpointMiddlewareAnnotation->names) ? [$endpointMiddlewareAnnotation->names] : $endpointMiddlewareAnnotation->names);
                     $endpoint->httpMethod = $httpMethod;
-                    $endpoint->inputs = $this->getInputsForMethod($reflectionMethod, $httpMethod);
+                    $endpoint->inputs = $this->getInputsForMethod($reflectionMethod, $httpMethod, $parsedObjects);
                     $endpoint->outputs = $this->getOutputsForMethod($reflectionMethod, $httpMethod, $outputWrapperAnnotation, $parsedObjects);
                     $endpoint->tags = $this->getTagsForMethod($reflectionMethod, $tagAnnotation);
 
-                    foreach (array_map("trim", explode("\n", preg_replace("/^(\s*)(\/*)(\**)(\/*)/m", "", $reflectionMethod->getDocComment()))) as $docblockLine) {
-                        if ($docblockLine && substr($docblockLine, 0, 1) != "@") {
-                            $endpoint->description .= $docblockLine . "\n";
+                    if (preg_match_all("/^[\t ]*\*[\t ]*(.+[^\/])$/m", $reflectionMethod->getDocComment(), $matches)) {
+                        foreach ($matches[1] as $docblockLine) {
+                            if ($docblockLine && substr($docblockLine, 0, 1) != "@") {
+                                $endpoint->description .= $docblockLine . PHP_EOL;
+                            }
                         }
                     }
+
                     if ($endpoint->description) {
                         $endpoint->description = substr($endpoint->description, 0, strlen($endpoint->description) - 1);
                     }
@@ -487,10 +490,11 @@ class GameMaker
      *
      * @param \ReflectionMethod $method
      * @param HttpMethod $httpMethod
+     * @param ObjectInformation[] $parsedObjects
      * @return Input[]
      * @throws \Exception
      */
-    protected function getInputsForMethod(\ReflectionMethod $method, HttpMethod $httpMethod)
+    protected function getInputsForMethod(\ReflectionMethod $method, HttpMethod $httpMethod, array &$parsedObjects = [])
     {
         /** @var Input[] $inputs */
         $inputs = [];
@@ -578,9 +582,11 @@ class GameMaker
 
                 if ($input->typeHint != null) {
                     foreach ($input->typeHint->types as $type) {
+                        $this->parseObject($type->getTypeOfInterest(), $parsedObjects);
+
                         if ($type->type == TypeHint::ARRAY_TYPE) {
                             if ($input->arrayFormat == null) {
-                                $input->arrayFormat = $this->defaultArrayFormat;
+                                $input->arrayFormat = $input->in == 'BODY' ? 'BRACKETS' : $this->defaultArrayFormat;
                             } else if ($input->arrayFormat == 'MULTI' && !($input->in == 'QUERY' || $input->in == 'FORM')) {
                                 throw new \Exception("MULTI array format can only be used for inputs in the QUERY or FORM.");
                             }
@@ -896,7 +902,7 @@ class GameMaker
             $parsedObject = new ObjectInformation($class, [], []);
             $reflectionClass = new \ReflectionClass($class);
 
-            foreach ($reflectionClass->getProperties(\ReflectionProperty::IS_PUBLIC) as $reflectedProperty) {
+            foreach ($reflectionClass->getProperties() as $reflectedProperty) {
                 foreach ($this->annotationReader->getPropertyAnnotations($reflectedProperty) as $propertyAnnotation) {
                     if ($propertyAnnotation instanceof TypeHint) {
                         $parsedObject->properties[] = $propertyAnnotation;
@@ -982,6 +988,22 @@ class GameMaker
     {
 
         $this->variableNameToInputNamingConvention = $variableNameToInputNamingConvention;
+    }
+
+    /**
+     * @return NamingConvention
+     */
+    public function getFunctionToPathNamingConvention()
+    {
+        return $this->functionToPathNamingConvention;
+    }
+
+    /**
+     * @return NamingConvention
+     */
+    public function getVariableNameToInputNamingConvention()
+    {
+        return $this->variableNameToInputNamingConvention;
     }
 
     /**

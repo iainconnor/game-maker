@@ -17,114 +17,124 @@ const MY_API_PATH = MY_DOMAIN . "/rest_api";
  * You can optionally ignore merging this with the parent annotation above.
  * @\IainConnor\GameMaker\Annotations\Controller(path="/foo", ignoreParent=false)
  */
-class Foo {
+class Foo
+{
 
-	/**
-	 * You can define the endpoint for a method.
-	 *
+    /**
+     * You can define the endpoint for a method.
+     *
      * @\IainConnor\GameMaker\Annotations\GET("/lorem")
-	 */
-	public function lorem() {
+     */
+    public function lorem()
+    {
 
-	}
+    }
 
-	/**
-	 * You can optionally ignore merging this path with the parent.
-	 *
-	 * @\IainConnor\GameMaker\Annotations\POST(path="http://www.mydemo.com/rest_api_v2/ipsum", ignoreParent=true)
-	 */
-	public function ipsum() {
+    /**
+     * You can optionally ignore merging this path with the parent.
+     *
+     * @\IainConnor\GameMaker\Annotations\POST(path="http://www.mydemo.com/rest_api/ipsum", ignoreParent=true)
+     */
+    public function ipsum()
+    {
 
-	}
+    }
 
-	/**
-	 * You can skip the HTTP method annotation, so long as the method name follows a naming convention of `{http-method-name}ApiPathName`.
-	 */
-	public function deleteDolor() {
+    /**
+     * You can skip the HTTP method annotation, so long as the method name follows a naming convention of `{http-method-name}ApiPathName`.
+     */
+    public function deleteDolor()
+    {
 
-	}
+    }
 
-	/**
-	 * But you can ignore public functions as well.
-	 *
-	 * @\IainConnor\GameMaker\Annotations\IgnoreEndpoint()
-	 */
-	public function imPublic() {
+    /**
+     * But you can ignore public functions as well.
+     *
+     * @\IainConnor\GameMaker\Annotations\IgnoreEndpoint()
+     */
+    public function imPublic()
+    {
 
-	}
+    }
 
-	/**
-	 * Methods can have inputs.
-	 *
-	 * @\IainConnor\GameMaker\Annotations\GET(path="/sit")
-	 *
-	 * By default, inputs are sourced from the most likely place given the HTTP method.
-	 * For example, GET's come from query parameters, POST's come from post body, etc.
-	 * This can be overridden.
-	 * @\IainConnor\GameMaker\Annotations\Input(in="HEADER")
-	 * @param string $foo A string.
-	 *
-	 * The names the input referred to as by the HTTP call can also be customized.
+    /**
+     * Methods can have inputs.
+     *
+     * @\IainConnor\GameMaker\Annotations\GET(path="/sit")
+     *
+     * By default, inputs are sourced from the most likely place given the HTTP method.
+     * For example, GET's come from query parameters, POST's come from post body, etc.
+     * This can be overridden.
+     * @\IainConnor\GameMaker\Annotations\Input(in="HEADER")
+     * @param string $foo A string.
+     *
+     * The names the input referred to as by the HTTP call can also be customized.
      * For array types, you can customize how the multiple values are input.
-	 * @\IainConnor\GameMaker\Annotations\Input(name="custom_name", arrayFormat="CSV")
-	 * @param string[] $bar An array of strings.
-	 *
-	 * Inputs can be type-hinted as one of a set of possible values.
-	 * Inputs are required unless defaulted or type-hinted as null.
+     * @\IainConnor\GameMaker\Annotations\Input(name="custom_name", arrayFormat="CSV")
+     * @param string[] $bar An array of strings.
+     *
+     * Inputs can be type-hinted as one of a set of possible values.
+     * Inputs are required unless defaulted or type-hinted as null.
      * You can also omit inputs from documentation if you wish to hide them for whatever reason.
      * @\IainConnor\GameMaker\Annotations\Input(enum={"yes", "no"}, skipDoc=true)
-	 * @param null|string $baz An optional stringey boolean.
-	 */
-	public function sit($foo, array $bar, $baz = null) {
+     * @param null|string $baz An optional stringey boolean.
+     */
+    public function sit($foo, array $bar, $baz = null)
+    {
 
-	}
+    }
 
-	/**
-	 * Inputs can be part of the query path.
+    /**
+     * Inputs can be part of the query path.
      * They can also be validated by one or more rules.
-	 *
-	 * @\IainConnor\GameMaker\Annotations\POST(path="/amit/{foo}")
+     *
+     * @\IainConnor\GameMaker\Annotations\POST(path="/amit/{foo}")
      * @\IainConnor\GameMaker\Annotations\Validation({"notEmpty", "shortString"})
      * @\IainConnor\GameMaker\Annotations\Validation({"shortString", "alphaString"})
      * @param string $foo A string.
-	 */
-	public function amit($foo) {
+     */
+    public function amit($foo)
+    {
 
-	}
+    }
 
-	/**
-	 * This works for guessed methods as well.
+    /**
+     * This works for guessed methods as well.
      *
      * You can tag methods with useful information.
      * @\IainConnor\GameMaker\Annotations\Tag(tags={"Foo", "Bar"})
-	 *
+     *
      * @\IainConnor\GameMaker\Annotations\Validation("notEmpty")
      * @param string $foo A string.
-	 */
-	public function getConsecteturFoo($foo) {
+     */
+    public function getConsecteturFoo($foo)
+    {
 
-	}
+    }
 
-	/**
-	 * If, for whatever reason, you don't want to have (some or any) inputs in your method signature,
-	 * you can still document them, so long as you provide a type hint manually in the annotation.
+    /**
+     * If, for whatever reason, you don't want to have (some or any) inputs in your method signature,
+     * you can still document them, so long as you provide a type hint manually in the annotation.
      * You can also still bind validations to these, but the validation annotation must appear before the input.
-	 *
-	 * @\IainConnor\GameMaker\Annotations\GET(path="/adipiscing")
-	 *
+     *
+     * @\IainConnor\GameMaker\Annotations\GET(path="/adipiscing")
+     *
      * @\IainConnor\GameMaker\Annotations\Validation("shortString")
      * @\IainConnor\GameMaker\Annotations\Input(typeHint="string $foo A string.")
-	 */
-	public function adipiscing() {
+     */
+    public function adipiscing()
+    {
 
-	}
+    }
 
     /**
      * You can define output from the route like any other return value.
      *
      * @return Biz Just a demo Object.
      */
-	public function getNullam() {
+    public function getNullam()
+    {
 
     }
 
@@ -133,7 +143,8 @@ class Foo {
      *
      * @return BizzExtended Just a demo Object.
      */
-    public function getNullamExtended() {
+    public function getNullamExtended()
+    {
 
     }
 
@@ -151,7 +162,8 @@ class Foo {
      * If you don't want to use the `@return` tag, you can also manually specify the type hint.
      * @\IainConnor\GameMaker\Annotations\Output(statusCode=200, typeHint="int[] Just a demo int.")
      */
-    public function deleteLibero() {
+    public function deleteLibero()
+    {
 
     }
 
@@ -168,7 +180,8 @@ class Foo {
      *
      * @return null Woah, no output.
      */
-    public function getBibendum() {
+    public function getBibendum()
+    {
 
     }
 
@@ -192,10 +205,11 @@ class Foo {
  * You can also Tag entire Controllers.
  * @\IainConnor\GameMaker\Annotations\Tag(tags={"Foo", "Bar"})
  *
- * @\IainConnor\GameMaker\Annotations\API(path=MY_DOMAIN)
+ * @\IainConnor\GameMaker\Annotations\API(path=MY_API_PATH)
  * @\IainConnor\GameMaker\Annotations\Controller(path="/baz")
  */
-class Baz {
+class Baz
+{
 
     /**
      * You can override the Controller-level Tag.
@@ -204,7 +218,8 @@ class Baz {
      * @\IainConnor\GameMaker\Annotations\Output(outputWrapperPath="Response.fizz.fuzz", outputWrapperMode="MERGE")
      * @return Biz The node for the wrapper.
      */
-    public function putEuismod() {
+    public function putEuismod()
+    {
 
     }
 
@@ -226,7 +241,8 @@ class Baz {
      * @\IainConnor\GameMaker\Annotations\IgnoreOutputWrapper()
      * @return string Just a string.
      */
-    public function deletePosuere() {
+    public function deletePosuere()
+    {
 
     }
 }
@@ -255,7 +271,8 @@ class Bar extends OutputWrapper
     }
 }
 
-class Biz {
+class Biz
+{
     /** @var int The id. */
     public $id;
 
@@ -263,7 +280,8 @@ class Biz {
     public $userName;
 }
 
-class BizzExtended extends Biz {
+class BizzExtended extends Biz
+{
     /** @var string The password. */
     public $password;
 }
@@ -285,25 +303,25 @@ $controllers = $gameMaker->parseControllers([Foo::class, Baz::class]);
 
 // And then output that parsed content as Markdown.
 $markdown = new \IainConnor\GameMaker\Processors\Markdown("Demo", "Just a demonstration.");
-echo ( $markdown->processControllers($controllers) );
+echo($markdown->processControllers($controllers));
 
 echo PHP_EOL . "--------" . PHP_EOL;
 
 // Or a Swagger spec.
-$swagger2 = new \IainConnor\GameMaker\Processors\Swagger2("Demo", "1.0", "Just a demonstration.");
-echo ( $swagger2->processControllers($controllers) );
+$swagger2 = new \IainConnor\GameMaker\Processors\Swagger2("Demo", new \IainConnor\GameMaker\NamingConventions\CamelToSnake(), "1.0", "Just a demonstration.");
+echo($swagger2->processControllers($controllers));
 
 echo PHP_EOL . "--------" . PHP_EOL;
 
 // Or MySQL.
 $mySqlSchema = new \IainConnor\GameMaker\Processors\MySqlSchema();
-echo ( $mySqlSchema->processControllers($controllers) );
+echo($mySqlSchema->processControllers($controllers));
 
 echo PHP_EOL . "--------" . PHP_EOL;
 
 // Or JSONSchema.
 $jsonSchema = new \IainConnor\GameMaker\Processors\JsonSchema("Just a demonstration.");
-echo ( implode(PHP_EOL . PHP_EOL, $jsonSchema->processControllers($controllers)) );
+echo(implode(PHP_EOL . PHP_EOL, $jsonSchema->processControllers($controllers)));
 
 echo PHP_EOL . "--------" . PHP_EOL;
 
