@@ -582,21 +582,17 @@ class GameMaker
 
                 if ($input->typeHint != null) {
                     foreach ($input->typeHint->types as $type) {
-                        $this->parseObject($type->getTypeOfInterest(), $parsedObjects);
+                        if ($input->skipDoc !== true && (array_search($type->type, $this->ignoredInputTypes) !== false || array_search($type->genericType, $this->ignoredInputTypes) !== false)) {
+                            $input->skipDoc = true;
+                        }
+
+                        $this->parseObject($type->getTypeOfInterest(), $parsedObjects, isset($input->skipDoc) && $input->skipDoc === true);
 
                         if ($type->type == TypeHint::ARRAY_TYPE) {
                             if ($input->arrayFormat == null) {
                                 $input->arrayFormat = $input->in == 'BODY' ? 'BRACKETS' : $this->defaultArrayFormat;
                             } else if ($input->arrayFormat == 'MULTI' && !($input->in == 'QUERY' || $input->in == 'FORM')) {
                                 throw new \Exception("MULTI array format can only be used for inputs in the QUERY or FORM.");
-                            }
-                        }
-
-                        if ($input->skipDoc !== true && (array_search($type->type, $this->ignoredInputTypes) !== false || array_search($type->genericType, $this->ignoredInputTypes) !== false)) {
-                            $input->skipDoc = true;
-
-                            if (array_key_exists($type->getTypeOfInterest(), $parsedObjects)) {
-                                $parsedObjects[$type->getTypeOfInterest()]->skipDoc = true;
                             }
                         }
                     }
@@ -699,15 +695,11 @@ class GameMaker
 
                 if ($output->typeHint != null) {
                     foreach ($output->typeHint->types as $outputType) {
-                        $this->parseObject($outputType->getTypeOfInterest(), $parsedObjects);
-
                         if ($output->skipDoc !== true && (array_search($outputType->type, $this->ignoredOutputTypes) !== false || array_search($outputType->genericType, $this->ignoredOutputTypes) !== false)) {
                             $output->skipDoc = true;
-
-                            if (array_key_exists($outputType->getTypeOfInterest(), $parsedObjects)) {
-                                $parsedObjects[$outputType->getTypeOfInterest()]->skipDoc = true;
-                            }
                         }
+
+                        $this->parseObject($outputType->getTypeOfInterest(), $parsedObjects, isset($output->skipDoc) && $output->skipDoc === true);
                     }
                 }
 
@@ -900,10 +892,11 @@ class GameMaker
      *
      * @param $class
      * @param array $parsedObjects
+     * @param bool $skipDoc
      * @param int $depth
      * @return ObjectInformation|null
      */
-    protected function parseObject($class, array &$parsedObjects, $depth = 0)
+    protected function parseObject($class, array &$parsedObjects, $skipDoc = false, $depth = 0)
     {
         if (class_exists($class) && !array_key_exists($class, $parsedObjects)) {
             $parsedObject = new ObjectInformation($class, [], []);
@@ -921,7 +914,7 @@ class GameMaker
                         if ($depth <= $this->maxRecursionDepth) {
                             foreach ($propertyAnnotation->types as $type) {
                                 // Recurse.
-                                $this->parseObject($type->getTypeOfInterest(), $parsedObjects, $depth + 1);
+                                $this->parseObject($type->getTypeOfInterest(), $parsedObjects, $skipDoc, $depth + 1);
                             }
                         }
                     }
