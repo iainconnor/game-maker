@@ -61,6 +61,8 @@ abstract class Processor
      */
     protected function getLongestCommonPrefix(array $strings, $terminatorCharacter = '/')
     {
+        $strings = array_values($strings);
+
         if (empty($strings) || count($strings) < 2) {
             return '';
         }

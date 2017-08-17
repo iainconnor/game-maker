@@ -921,6 +921,7 @@ class GameMaker
                 }
             }
 
+            $parsedObject->skipDoc = $skipDoc;
             $parsedObjects[$class] = $parsedObject;
 
             return $parsedObject;
