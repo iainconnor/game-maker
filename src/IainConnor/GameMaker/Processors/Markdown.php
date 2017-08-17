@@ -48,7 +48,9 @@ class Markdown extends Processor
         $markdown .= PHP_EOL;
 
         $markdown .= "## Entities." . PHP_EOL . PHP_EOL;
-        $markdown .= $this->generateMarkdownForObjects(GameMaker::getUniqueObjectInControllers($controllers));
+        $markdown .= $this->generateMarkdownForObjects(array_filter(GameMaker::getUniqueObjectInControllers($controllers), function (ObjectInformation $objectInformation) {
+            return isset($objectInformation->skipDoc) && $objectInformation->skipDoc;
+        }));
         $markdown .= PHP_EOL;
 
         if ($this->branding) {

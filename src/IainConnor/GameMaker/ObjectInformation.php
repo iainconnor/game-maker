@@ -29,6 +29,11 @@ class ObjectInformation
     public $uniqueName;
 
     /**
+     * @var string
+     */
+    public $skipDoc;
+
+    /**
      * ObjectInformation constructor.
      * @param string $class
      * @param TypeHint[] $properties

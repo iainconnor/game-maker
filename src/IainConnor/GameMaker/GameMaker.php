@@ -594,6 +594,10 @@ class GameMaker
 
                         if ($input->skipDoc !== true && (array_search($type->type, $this->ignoredInputTypes) !== false || array_search($type->genericType, $this->ignoredInputTypes) !== false)) {
                             $input->skipDoc = true;
+
+                            if (array_key_exists($type->getTypeOfInterest(), $parsedObjects)) {
+                                $parsedObjects[$type->getTypeOfInterest()]->skipDoc = true;
+                            }
                         }
                     }
                 }
@@ -699,6 +703,10 @@ class GameMaker
 
                         if ($output->skipDoc !== true && (array_search($outputType->type, $this->ignoredOutputTypes) !== false || array_search($outputType->genericType, $this->ignoredOutputTypes) !== false)) {
                             $output->skipDoc = true;
+
+                            if (array_key_exists($outputType->getTypeOfInterest(), $parsedObjects)) {
+                                $parsedObjects[$outputType->getTypeOfInterest()]->skipDoc = true;
+                            }
                         }
                     }
                 }
@@ -895,8 +903,7 @@ class GameMaker
      * @param int $depth
      * @return ObjectInformation|null
      */
-    protected
-    function parseObject($class, array &$parsedObjects, $depth = 0)
+    protected function parseObject($class, array &$parsedObjects, $depth = 0)
     {
         if (class_exists($class) && !array_key_exists($class, $parsedObjects)) {
             $parsedObject = new ObjectInformation($class, [], []);
