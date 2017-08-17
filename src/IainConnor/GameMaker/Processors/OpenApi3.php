@@ -41,7 +41,7 @@ class OpenApi3 extends Swagger2
         $basePath = $this->extractBasePathFromControllers($controllers);
 
         $uniqueObjects = array_filter(GameMaker::getUniqueObjectInControllers($controllers), function (ObjectInformation $objectInformation) {
-            return isset($objectInformation->skipDoc) && $objectInformation->skipDoc;
+            return !isset($objectInformation->skipDoc) || $objectInformation->skipDoc !== true;
         });
 
         $uniqueNames = array_map(function ($element) {

@@ -27,7 +27,7 @@ class MySqlSchema extends Processor
         $mySql = [];
 
         $uniqueTopLevelObjects = $this->getTopLevelObjects(array_filter(GameMaker::getUniqueObjectInControllers($controllers), function (ObjectInformation $objectInformation) {
-            return isset($objectInformation->skipDoc) && $objectInformation->skipDoc;
+            return !isset($objectInformation->skipDoc) || $objectInformation->skipDoc !== true;
         }));
 
         $this->alphabetizeObjects($uniqueTopLevelObjects);

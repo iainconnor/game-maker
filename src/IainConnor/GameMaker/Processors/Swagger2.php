@@ -80,7 +80,7 @@ class Swagger2 extends Processor
         $basePath = $this->extractBasePathFromControllers($controllers);
 
         $uniqueObjects = array_filter(GameMaker::getUniqueObjectInControllers($controllers), function (ObjectInformation $objectInformation) {
-            return isset($objectInformation->skipDoc) && $objectInformation->skipDoc;
+            return !isset($objectInformation->skipDoc) || $objectInformation->skipDoc !== true;
         });
 
         $uniqueNames = array_map(function ($element) {
