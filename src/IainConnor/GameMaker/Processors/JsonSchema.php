@@ -7,6 +7,7 @@ namespace IainConnor\GameMaker\Processors;
 use IainConnor\Cornucopia\Annotations\TypeHint;
 use IainConnor\Cornucopia\Type;
 use IainConnor\GameMaker\ControllerInformation;
+use IainConnor\GameMaker\NamingConventions\CamelToSnake;
 
 class JsonSchema extends Processor
 {
@@ -19,7 +20,7 @@ class JsonSchema extends Processor
      */
     public function __construct($description = null)
     {
-        $this->swaggerProcessor = new Swagger2(get_class(), 'draft-04', $description);
+        $this->swaggerProcessor = new Swagger2(get_class(), new CamelToSnake(), 'draft-04', $description);
     }
 
     /**

@@ -248,16 +248,16 @@
         },
         {
             "name": "iainconnor/cornucopia",
-            "version": "1.0.11",
+            "version": "1.0.12",
             "source": {
                 "type": "git",
                 "url": "https://github.com/iainconnor/cornucopia.git",
-                "reference": "4283b1c6fe3cf762ea745c21eae6585ab37a5baa"
+                "reference": "33c35b70caccd39286bb8b5b179216f4c9b7fddd"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/iainconnor/cornucopia/zipball/4283b1c6fe3cf762ea745c21eae6585ab37a5baa",
-                "reference": "4283b1c6fe3cf762ea745c21eae6585ab37a5baa",
+                "url": "https://api.github.com/repos/iainconnor/cornucopia/zipball/33c35b70caccd39286bb8b5b179216f4c9b7fddd",
+                "reference": "33c35b70caccd39286bb8b5b179216f4c9b7fddd",
                 "shasum": ""
             },
             "require": {
@@ -281,7 +281,7 @@
                 }
             ],
             "description": "Expanded Annotation processor.",
-            "time": "2017-08-16T22:10:21+00:00"
+            "time": "2017-08-17T14:12:34+00:00"
         },
         {
             "name": "nikic/php-parser",
