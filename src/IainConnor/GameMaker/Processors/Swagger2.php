@@ -294,7 +294,7 @@ class Swagger2 extends Processor
 
         foreach ($inputs as $input) {
             if (!isset($input->skipDoc) || $input->skipDoc !== true) {
-                if (!$hasManyBodyInputs && $input->in == 'BODY') {
+                if (!($hasManyBodyInputs && $input->in == 'BODY')) {
                     /** @var InputTypeHint $typeHint */
                     $typeHint = $input->typeHint;
 
